@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>poissonocp</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="PoissonOCP_files/libs/clipboard/clipboard.min.js"></script>
+<script src="PoissonOCP_files/libs/quarto-html/quarto.js"></script>
+<script src="PoissonOCP_files/libs/quarto-html/popper.min.js"></script>
+<script src="PoissonOCP_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="PoissonOCP_files/libs/quarto-html/anchor.min.js"></script>
+<link href="PoissonOCP_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="PoissonOCP_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="PoissonOCP_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="PoissonOCP_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="PoissonOCP_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+<section id="tutorial-numerical-solution-of-optimal-control-problems-governed-by-the-laplace-equation" class="level1">
+<h1>Tutorial: Numerical solution of optimal control problems governed by the Laplace equation</h1>
+<p>Before we begin let</p>
+<p><span class="math display">\[
+% \DeclareMathOperator{\Div}{div}
+% \DeclareMathOperator{\Grad}{grad}
+% \DeclareMathOperator{\Curl}{curl}
+% \DeclareMathOperator{\Rot}{rot}
+% \DeclareMathOperator{\ord}{ord}
+% \DeclareMathOperator{\Kern}{ker}
+% \DeclareMathOperator{\Image}{im}
+% \DeclareMathOperator{\spann}{span}
+% \DeclareMathOperator{\dist}{dist}
+% \DeclareMathOperator{\diam}{diam}
+% \DeclareMathOperator{\sig}{sig}
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\VV}{\mathbb{V}}
+\newcommand{\dGamma}{\,\mathrm{d} \Gamma}
+\newcommand{\dGammah}{\,\mathrm{d} \Gamma_h}
+\newcommand{\dx}{\,\mathrm{d}x}
+\newcommand{\dy}{\,\mathrm{d}y}
+\newcommand{\ds}{\,\mathrm{d}s}
+\newcommand{\dt}{\,\mathrm{d}t}
+\newcommand{\dS}{\,\mathrm{d}S}
+\newcommand{\dV}{\,\mathrm{d}V}
+\newcommand{\dX}{\,\mathrm{d}X}
+\newcommand{\dY}{\,\mathrm{d}Y}
+\newcommand{\dE}{\,\mathrm{d}E}
+\newcommand{\dK}{\,\mathrm{d}K}
+\newcommand{\dM}{\,\mathrm{d}M}
+\newcommand{\cd}{\mathrm{cd}}
+\newcommand{\onehalf}{\frac{1}{2}}
+\newcommand{\bfP}{\boldsymbol P}
+\newcommand{\bfx}{\boldsymbol x}
+\newcommand{\bfa}{\boldsymbol a}
+\newcommand{\bfu}{\boldsymbol u}
+\newcommand{\bfv}{\boldsymbol v}
+\newcommand{\bfe}{\boldsymbol e}
+\newcommand{\bfg}{\boldsymbol g}
+\newcommand{\bfb}{\boldsymbol b}
+\newcommand{\bff}{\boldsymbol f}
+\newcommand{\bfp}{\boldsymbol p}
+\newcommand{\bft}{\boldsymbol t}
+\newcommand{\bfj}{\boldsymbol j}
+\newcommand{\bfB}{\boldsymbol B}
+\newcommand{\bfV}{\boldsymbol V}
+\newcommand{\bfE}{\boldsymbol E}
+\newcommand{\bfK}{\boldsymbol K}
+\newcommand{\mcT}{\mathcal{T}}
+\newcommand{\mcL}{\mathcal{L}}
+\newcommand{\mcU}{\mathcal{U}}
+\newcommand{\ubar}{\overline{u}}
+\newcommand{\ybar}{\overline{y}}
+\newcommand{\pbar}{\overline{p}}
+\]</span></p>
+<p>In this notebook we solve numerically the distributed optimal control problem</p>
+<p><span class="math display">\[\begin{align*}
+J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \|^2_{\Omega} \to \min
+\end{align*}\]</span></p>
+<p>subject to state equation <span class="math display">\[\begin{alignat}{2}
+-\Delta y &amp;= f + \beta u &amp; &amp;\quad \text{in } \Omega,
+\\
+        y &amp;= 0 &amp; &amp; \quad \text{on } \Gamma = \partial \Omega,
+\end{alignat}\]</span> and <span class="math inline">\(u \in \mathcal{U}_{ad}\)</span> for some convex subset of <span class="math inline">\(\mathcal{U} = L^2(\Omega)\)</span>. Here, $$ is simply some positive constant, and for simplicity, we pick <span class="math inline">\(\Omega = (0,1)^2 \subset \mathbb{R}^2\)</span>.</p>
+<p>Finally, our target function is <span class="math display">\[y_{\Omega} = 10x_1(1-x_1)x_2(1-x_2).
+\]</span>. This example is take from <a href="https://link.springer.com/10.1007/978-3-030-77226-0">ManzoniQuarteroniSalsa2021, Section 6.5.1, Test case 1</a>.</p>
+<section id="problem-1" class="level2">
+<h2 class="anchored" data-anchor-id="problem-1">Problem 1</h2>
+<p>Let <span class="math inline">\(\mathcal{U}_{ad} = \mathcal{U}\)</span> and solve the resulting <em>unconstrained</em> OCP numerically by implementing a descent methods using * steepest descent as descent direction * backtracking Armijo line-search to select the step length</p>
+<p>Choose <span class="math display">\[
+  \rho = \dfrac{1}{2},
+  \quad
+  \alpha_0 = 1.0,
+  \quad
+  \alpha_{\mathrm{min}} = 0.01,
+  \quad
+  \gamma = 10^{-4},
+  \quad
+  N_{\max} = 500  
+\]</span></p>
+<p>We present a detailed step-by-step walk-through of the s. Afterwards, we will wrap up everything and encapsulated our code into a nice and neat solver function.</p>
+</section>
+<section id="step-1" class="level2">
+<h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
+<p>First, we need to derive the adjoint equation and the optimality condition, and we will do so using the formal Lagrange method. For the given state equation and and cost functional, the Lagrangian <span class="math inline">\(\mathcal{L}(y,u,p)\)</span> is given by <span class="math display">\[
+\mcL(y, u, p) = J(y, u) - a(y,p) + (f + \beta u, p)_{\Omega}.
+\]</span></p>
+<p>So we want to find <span class="math inline">\(\ubar, \ybar, \pbar\)</span> such that <span class="math display">\[\begin{align*}
+\mcL'_p(\ybar,\ubar,\pbar) \phi &amp;= -a(\ybar, \varphi) + (f + \beta \ubar, \varphi)_{\Omega} = 0 \quad \forall \varphi \in V
+\\
+\mcL'_y(\ybar,\ubar,\pbar) \psi &amp;=  J'_y(\ybar,\ubar) \psi -a(\psi, \pbar) = (\ybar - y_{\Omega}, \psi)_{\Omega} - a(\psi, \pbar) = 0 \quad \forall \psi \in V
+\\
+\mcL'_u(\ybar,\ubar,\pbar) v &amp;=  J'_u(\ybar,\ubar)+ (\beta v, \pbar)_{\Omega}
+\\
+&amp;= (\gamma \ubar, v)_{\Omega} + (\beta v, \pbar)_{\Omega}
+=(\gamma \ubar + \beta \pbar, v)_{\Omega} = 0 \quad \forall v \in \mathcal{U}.
+\end{align*}\]</span></p>
+<p>Setting <span class="math inline">\(u_0\)</span>, <span class="math inline">\(\sigma, \rho\)</span>, <span class="math inline">\(\tau\)</span>, <span class="math inline">\(\tau_{\mathrm{min}}\)</span></p>
+</section>
+<section id="step-2-pseudocode-for-the-descent-method-with-armijo-backtracking" class="level2">
+<h2 class="anchored" data-anchor-id="step-2-pseudocode-for-the-descent-method-with-armijo-backtracking">Step 2 Pseudocode for the Descent method with Armijo backtracking</h2>
+<p>Before we start implementing, let’s have a look at the following pseudocode taking from <a href="https://link.springer.com/book/10.1007/978-3-030-77226-0">ManzoniQuarteroniSalsa2021, Algorithm 6.2</a></p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="PoissonOCP_files/figure-html/568aa216-1-SteepestDescentPseudoCode.png" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">SteepestDescentPseudoCode.png</figcaption><p></p>
+</figure>
+</div>
+<ul>
+<li>Discuss how you would realize the computation of <span class="math inline">\(J(u_{k+1})\)</span> and <span class="math inline">\(\nabla J(u_{k+1})\)</span> in practice</li>
+<li>Can you find any flaws in the given pseudocode? How could you improve it?</li>
+<li>Which parts remain unchanged when you solve the state and co-state problems for different controls <span class="math inline">\(u\)</span> and states <span class="math inline">\(y\)</span>? How can we use this to reduce the computational time for each state/co-state solve?</li>
+</ul>
+</section>
+<section id="step-3-review-of-how-to-solve-pdes-problems-in-gridap" class="level2">
+<h2 class="anchored" data-anchor-id="step-3-review-of-how-to-solve-pdes-problems-in-gridap">Step 3 Review of how to solve PDEs problems in Gridap</h2>
+<p>As a little refresher, we now implement the state problem for an initial random control <span class="math inline">\(u\)</span>. At the same time, we will see how to make the state/co-state</p>
+<div class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap.Algebra</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>domain <span class="op">=</span> (<span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>partition <span class="op">=</span> (<span class="fl">600</span>, <span class="fl">600</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> <span class="fu">CartesianDiscreteModel</span>(domain, partition) <span class="op">|&gt;</span> simplexify</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(model, <span class="st">"mesh_nx</span><span class="sc">$</span>(partition[<span class="fl">1</span>])<span class="st">_ny</span><span class="sc">$</span>(partition[<span class="fl">2</span>])<span class="st">"</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>β <span class="op">=</span> <span class="fl">1</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> <span class="fl">0</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">yΩ</span>(x) <span class="op">=</span> <span class="fl">10</span><span class="op">*</span>x[<span class="fl">1</span>]<span class="fu">*</span>(<span class="fl">1</span><span class="op">-</span>x[<span class="fl">1</span>])<span class="op">*</span>x[<span class="fl">2</span>]<span class="fu">*</span>(<span class="fl">1</span><span class="op">-</span>x[<span class="fl">2</span>]) <span class="co"># Target function</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">yd</span>(x) <span class="op">=</span> <span class="fl">0</span>  <span class="co"># Dirichlet condition</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co">## Define function spaces </span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="fl">1</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>reffe <span class="op">=</span> <span class="fu">ReferenceFE</span>(lagrangian, <span class="dt">Float64</span>, order)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Test and trial spaces for the state problem</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>V0 <span class="op">=</span> <span class="fu">TestFESpace</span>(model, reffe, conformity<span class="op">=:</span>H1, dirichlet_tags<span class="op">=</span><span class="st">"boundary"</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>Vd <span class="op">=</span> <span class="fu">TrialFESpace</span>(V0, yd)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Function space for the control</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>U <span class="op">=</span> <span class="fu">FESpace</span>(model, reffe, conformity<span class="op">=:</span>H1)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up measures</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>degree <span class="op">=</span> <span class="fl">2</span><span class="op">*</span>order</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>Ω <span class="op">=</span> <span class="fu">Triangulation</span>(model)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>dΩ <span class="op">=</span> <span class="fu">Measure</span>(Ω, degree)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for state problem</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="fu">a</span>(y,<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">∫</span>(<span class="fu">∇</span>(y)<span class="fu">⋅∇</span>(<span class="cn">φ</span>))<span class="op">*</span>dΩ</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for state problem</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># As the control u will change throughout the numerical computation</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="co"># make l dependent on u as well.</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Later we use lambda function to make a concrete l in each step, e.g.</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="co"># l_u = φ -&gt; l(φ, u)</span></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="fu">l</span>(<span class="cn">φ</span>, u) <span class="op">=</span> <span class="fu">∫</span>((f<span class="op">+</span>β<span class="op">*</span>u)<span class="op">*</span><span class="cn">φ</span>)<span class="op">*</span>dΩ</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a random u</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="fu">l_u</span>(<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">l</span>(<span class="cn">φ</span>, u)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineFEOperator</span>(a, l_u, Vd, V0)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Alternative: use lambda/anonymuous function to define l_u</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="co"># op = AffineFEOperator(a, φ -&gt; l(φ, u), Vd, V0)</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>y  <span class="op">=</span> <span class="fu">solve</span>(op)</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(Ω, <span class="st">"results"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>[ Info: Precompiling Gridap [56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e]</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>(["results.vtu"],)</code></pre>
+</div>
+</div>
+<p>Now we modify the code above to make multiple solves with same lhs but different rhs more efficient. We will need the following snippets</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Assemble a and l manually</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>A <span class="op">=</span> <span class="fu">assemble_matrix</span>(a, Vd, V0)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="fu">assemble_vector</span>(l, V0)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a AffineOperator (NOT an AffineFEOperator) to work on linear system directly</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap.Algebra</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>lu <span class="op">=</span> <span class="fu">LUSolver</span>()</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve system manually, store the cached LU decomposition</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>y_dof_vals  <span class="op">=</span> <span class="fu">fill</span>(<span class="fl">10.0</span>, <span class="fu">num_free_dofs</span>(V0))</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op)</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> <span class="fu">FEFunction</span>(V0, y_dof_vals)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co"># A subsequent solve would look like this</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Modified l</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="fu">assemble_vector</span>(l, V0)</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b)</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op, cache, <span class="cn">false</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="task" class="level4">
+<h4 class="anchored" data-anchor-id="task">Task</h4>
+<p>Incorporate the suggested changes in the code above. Time the solve of the equation twice using the <code>@time</code> macro</p>
+</section>
+<section id="solution" class="level4">
+<h4 class="anchored" data-anchor-id="solution">Solution</h4>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># We resuse as much as possible from previous code cell.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a random u</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># l_u(φ) = l(φ, u)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># op = AffineFEOperator(a, l_u, Vd, V0)</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>A <span class="op">=</span> <span class="fu">assemble_matrix</span>(a, Vd, V0)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;l</span>(<span class="cn">φ</span>, u), V0)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b) </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>y_dof_vals <span class="op">=</span> <span class="fu">fill</span>(<span class="fl">0.0</span>, <span class="fu">num_free_dofs</span>(V0))</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>lu <span class="op">=</span> <span class="fu">LUSolver</span>()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> <span class="fu">FEFunction</span>(V0, y_dof_vals)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co"># op = AffineFEOperator(a, φ -&gt; l(φ, u), Vd, V0)</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co"># y  = solve(op)</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(Ω, <span class="st">"results"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  1.268092 seconds (68 allocations: 751.332 MiB, 2.17% gc time)</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<pre><code>(["results.vtu"],)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Second solve</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># l_u(φ) = l(φ, u)</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>b <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;l</span>(<span class="cn">φ</span>, u), V0)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b) </span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op, cache, <span class="cn">false</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> <span class="fu">FEFunction</span>(V0, y_dof_vals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  0.096653 seconds (65.64 k allocations: 20.397 MiB, 24.49% compilation time)</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre><code>SingleFieldFEFunction():
+ num_cells: 720000
+ DomainStyle: ReferenceDomain()
+ Triangulation: BodyFittedTriangulation()
+ Triangulation id: 2045519746158799831</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="step-4-implementation-of-the-descent-method" class="level2">
+<h2 class="anchored" data-anchor-id="step-4-implementation-of-the-descent-method">Step 4 Implementation of the descent method</h2>
+<p>Next we implement the function <code>descent_method</code>. When everything is set up, we want to call like this</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">descent_method</span>(a<span class="op">=</span>a, l<span class="op">=</span>l, astar<span class="op">=</span>astar, lstar<span class="op">=</span>lstar, spaces<span class="op">=</span>(Vd, V0, U), J<span class="op">=</span>J, ∇J<span class="op">=</span>∇J,</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>               ρ<span class="op">=</span>ρ, α_0<span class="op">=</span>α_0, α_min<span class="op">=</span>α_min, σ<span class="op">=</span>σ, K_max<span class="op">=</span>K_max, tol<span class="op">=</span>tol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Let’s start with defining the co-state problem as well as the cost functional and its gradient</p>
+<div class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co">## Define l2 norms and cost functional</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">l2</span>(g) <span class="op">=</span> <span class="fu">sum</span>(<span class="fu">∫</span>(g<span class="op">*</span>g)<span class="op">*</span>dΩ)<span class="op">^</span><span class="fl">0.5</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Good to know/mind variable scope: Note that J depends implicitly on γ. If you change γ, so will J!</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>γ <span class="op">=</span> <span class="fl">10</span><span class="op">^-</span><span class="fl">6</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">J</span>(y,u) <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">2</span><span class="fu">*sum</span>(<span class="fu">∫</span>((y<span class="op">-</span>yΩ)<span class="fu">*</span>(y<span class="op">-</span>yΩ))<span class="op">*</span>dΩ) <span class="op">+</span> γ<span class="op">/</span><span class="fl">2</span><span class="fu">*sum</span>(<span class="fu">∫</span>(u<span class="op">*</span>u)<span class="op">*</span>dΩ)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">## Set-up co-state problem</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">pd</span>(x) <span class="op">=</span> <span class="fl">0</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for co-state problem</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="fu">aₚ</span>(p,<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">∫</span>(<span class="fu">∇</span>(p)<span class="fu">⋅∇</span>(<span class="cn">φ</span>))<span class="op">*</span>dΩ</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Define rhs for co-state problem</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="fu">lₚ</span>(<span class="cn">φ</span>, y) <span class="op">=</span> <span class="fu">∫</span>((y<span class="op">-</span>yΩ)<span class="op">*</span><span class="cn">φ</span>)<span class="op">*</span>dΩ</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>Aₚ <span class="op">=</span> <span class="fu">assemble_matrix</span>(aₚ, Vd, V0)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>bₚ <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;lₚ</span>(<span class="cn">φ</span>, y), V0)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>opₚ <span class="op">=</span> <span class="fu">AffineOperator</span>(Aₚ, bₚ) </span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>p_dof_vals <span class="op">=</span> <span class="fu">fill</span>(<span class="fl">0.0</span>, <span class="fu">num_free_dofs</span>(V0))</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>luₚ <span class="op">=</span> <span class="fu">LUSolver</span>()</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(p_dof_vals, luₚ, opₚ)</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> <span class="fu">FEFunction</span>(V0, p_dof_vals)</span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co">##</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Define gradient function for</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="fu">∇J</span>(u, p) <span class="op">=</span> (γ<span class="op">*</span>u <span class="op">+</span> β<span class="op">*</span>p)</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Parameters for the descent methods</span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>ρ, α_0, α_min, σ, K_max, tol <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">2</span>, <span class="fl">1.0</span>, (<span class="fl">1</span><span class="op">/</span><span class="fl">2</span>)<span class="op">^</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">^-</span><span class="fl">4</span>, <span class="fl">2000</span>, <span class="fl">10</span><span class="op">^-</span><span class="fl">3</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  1.541857 seconds (68 allocations: 751.332 MiB, 0.72% gc time)</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<pre><code>(0.5, 1.0, 0.03125, 0.0001, 2000, 0.001)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">descent_method</span>(;a, l, astar, lstar, spaces, J, ∇J,</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                         ρ, α_0, α_min, σ, K_max, tol)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Step 1 Initialization </span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract spaces</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    Vd, V0, U <span class="op">=</span> spaces</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initialize u with some random values</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assemble lhs/rhs for state equation</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    A <span class="op">=</span> <span class="fu">assemble_matrix</span>(a, Vd, V0)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    b <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;l</span>(<span class="cn">φ</span>, u), V0)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b) </span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Now solve the state problem, but cache the LU decomposition!</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    y_dof_vals <span class="op">=</span> <span class="fu">fill</span>(<span class="fl">0.0</span>, <span class="fu">num_free_dofs</span>(Vd))</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    lu <span class="op">=</span> <span class="fu">LUSolver</span>()</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op)</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># y = FEFunction(V0, y_dof_vals)</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="fu">FEFunction</span>(Vd, y_dof_vals)</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assemble lhs/rhs</span></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Note that we have Dirchlet b.c. y = 0 so Vd == V!</span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>    Astar <span class="op">=</span> <span class="fu">assemble_matrix</span>(astar, Vd, V0)</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    bstar <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;lstar</span>(<span class="cn">φ</span>, y), V0)</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    opstar <span class="op">=</span> <span class="fu">AffineOperator</span>(Astar, bstar) </span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Now solve the co-state problem, but cache the LU decomposition </span></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>    p_dof_vals <span class="op">=</span> <span class="fu">fill</span>(<span class="fl">0.0</span>, <span class="fu">num_free_dofs</span>(V0))</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>    lustar <span class="op">=</span> <span class="fu">LUSolver</span>()</span>
+<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> cachestar <span class="op">=</span> <span class="fu">solve!</span>(p_dof_vals, lustar, opstar)</span>
+<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> <span class="fu">FEFunction</span>(V0, p_dof_vals)</span>
+<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initial solve of state problem</span></span>
+<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">writevtk</span>(Ω, <span class="st">"results_intial"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff, <span class="st">"u"</span> <span class="op">=&gt;</span> u, <span class="st">"p"</span> <span class="op">=&gt;</span> p])</span>
+<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Store copies for iteration</span></span>
+<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>    u_old <span class="op">=</span> <span class="fu">FEFunction</span>(U, <span class="fu">get_free_dof_values</span>(u))</span>
+<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>    y_old <span class="op">=</span> <span class="fu">FEFunction</span>(V0, <span class="fu">get_free_dof_values</span>(y))</span>
+<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a>    cost_old <span class="op">=</span> <span class="fu">J</span>(y_old, u_old)</span>
+<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Initial cost J(y, u) = </span><span class="sc">$</span>(cost_old)<span class="st">"</span>)</span>
+<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute initial gradient</span></span>
+<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>    Jgrad <span class="op">=</span>  <span class="fu">∇J</span>(u, p)</span>
+<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute initial descent direction</span></span>
+<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>    dk <span class="op">=</span> <span class="op">-</span> Jgrad</span>
+<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute norm of initial gradient</span></span>
+<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>    l2_Jgrad_0 <span class="op">=</span> <span class="fu">l2</span>(Jgrad)</span>
+<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Step 2: Run iteration</span></span>
+<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>    k <span class="op">=</span> <span class="fl">1</span> </span>
+<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> k <span class="op">&lt;=</span> K_max <span class="op">&amp;&amp;</span> <span class="fu">l2</span>(Jgrad) <span class="op">&gt;</span> tol<span class="op">*</span>l2_Jgrad_0</span>
+<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>        <span class="fu">println</span>(<span class="st">"========================================"</span>)</span>
+<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>        <span class="fu">println</span>(<span class="st">"Iteration Step k = </span><span class="sc">$</span>(k)<span class="st">"</span>)</span>
+<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Make sure that cost variable is defined outside of backtracking loop</span></span>
+<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a>        cost <span class="op">=</span> cost_old</span>
+<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Start backtracking</span></span>
+<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a>        α <span class="op">=</span> α_0</span>
+<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> α <span class="op">&gt;</span> α_min</span>
+<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a>            <span class="fu">println</span>(<span class="st">"----------------------------------------"</span>)</span>
+<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a>            <span class="fu">println</span>(<span class="st">"Step length alpha = </span><span class="sc">$</span>(α)<span class="st">"</span>)</span>
+<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compute tentative new control function defined by current line search parameter</span></span>
+<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a>            u <span class="op">=</span> <span class="fu">interpolate</span>(u_old <span class="op">+</span> α<span class="op">*</span>dk, U)</span>
+<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compute corresponding state problem by reassembling rhs l and solve linear system using the cached LU decomposition</span></span>
+<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>            b <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;l</span>(<span class="cn">φ</span>, u), V0)</span>
+<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a>            op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b) </span>
+<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a>            <span class="fu">solve!</span>(y_dof_vals, lu, op, cache, <span class="cn">false</span>)</span>
+<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>            y <span class="op">=</span> <span class="fu">FEFunction</span>(Vd, y_dof_vals)</span>
+<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compare decrease in functional and accept if sufficient</span></span>
+<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>            cost <span class="op">=</span> <span class="fu">J</span>(y, u)</span>
+<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a>            <span class="fu">println</span>(<span class="st">" J(y_old, u_old) = </span><span class="sc">$</span>(cost_old)<span class="st">"</span>)</span>
+<span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a>            <span class="fu">println</span>(<span class="st">" J(y, u) = </span><span class="sc">$</span>(cost)<span class="st">"</span>)</span>
+<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> cost <span class="op">&lt;</span> cost_old <span class="op">+</span> <span class="fu">σ*α*sum</span>(<span class="fu">∫</span>(Jgrad<span class="op">*</span>dk)<span class="op">*</span>dΩ)</span>
+<span id="cb15-80"><a href="#cb15-80" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb15-81"><a href="#cb15-81" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span></span>
+<span id="cb15-82"><a href="#cb15-82" aria-hidden="true" tabindex="-1"></a>                α <span class="op">*=</span> ρ</span>
+<span id="cb15-83"><a href="#cb15-83" aria-hidden="true" tabindex="-1"></a>            <span class="cf">end</span></span>
+<span id="cb15-84"><a href="#cb15-84" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb15-85"><a href="#cb15-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-86"><a href="#cb15-86" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Store latest control and state and resulting cost for next iteration</span></span>
+<span id="cb15-87"><a href="#cb15-87" aria-hidden="true" tabindex="-1"></a>        u_old <span class="op">=</span> <span class="fu">FEFunction</span>(U, <span class="fu">get_free_dof_values</span>(u))</span>
+<span id="cb15-88"><a href="#cb15-88" aria-hidden="true" tabindex="-1"></a>        y_old <span class="op">=</span> <span class="fu">FEFunction</span>(V0, <span class="fu">get_free_dof_values</span>(y))</span>
+<span id="cb15-89"><a href="#cb15-89" aria-hidden="true" tabindex="-1"></a>        cost_old <span class="op">=</span> cost</span>
+<span id="cb15-90"><a href="#cb15-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-91"><a href="#cb15-91" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Now Compute new gradient via new adjoint state</span></span>
+<span id="cb15-92"><a href="#cb15-92" aria-hidden="true" tabindex="-1"></a>        bstar <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="cn">φ</span> <span class="op">-&gt;</span> <span class="fu">lstar</span>(<span class="cn">φ</span>,y), V0)</span>
+<span id="cb15-93"><a href="#cb15-93" aria-hidden="true" tabindex="-1"></a>        opstar <span class="op">=</span> <span class="fu">AffineOperator</span>(Astar, bstar)</span>
+<span id="cb15-94"><a href="#cb15-94" aria-hidden="true" tabindex="-1"></a>        cachestar <span class="op">=</span> <span class="fu">solve!</span>(p_dof_vals, lustar, opstar, cachestar, <span class="cn">false</span>)</span>
+<span id="cb15-95"><a href="#cb15-95" aria-hidden="true" tabindex="-1"></a>        p <span class="op">=</span> <span class="fu">FEFunction</span>(V0, p_dof_vals)</span>
+<span id="cb15-96"><a href="#cb15-96" aria-hidden="true" tabindex="-1"></a>        Jgrad <span class="op">=</span> (γ<span class="op">*</span>u <span class="op">+</span> β<span class="op">*</span>p)</span>
+<span id="cb15-97"><a href="#cb15-97" aria-hidden="true" tabindex="-1"></a>        dk <span class="op">=</span> <span class="op">-</span> Jgrad</span>
+<span id="cb15-98"><a href="#cb15-98" aria-hidden="true" tabindex="-1"></a>        k <span class="op">+=</span> <span class="fl">1</span></span>
+<span id="cb15-99"><a href="#cb15-99" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span>     </span>
+<span id="cb15-100"><a href="#cb15-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-101"><a href="#cb15-101" aria-hidden="true" tabindex="-1"></a>    ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
+<span id="cb15-102"><a href="#cb15-102" aria-hidden="true" tabindex="-1"></a>    <span class="fu">writevtk</span>(Ω, <span class="st">"results_final"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff, <span class="st">"u"</span> <span class="op">=&gt;</span> u, <span class="st">"p"</span> <span class="op">=&gt;</span> p])</span>
+<span id="cb15-103"><a href="#cb15-103" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre><code>descent_method (generic function with 1 method)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">descent_method</span>(a<span class="op">=</span>a, l<span class="op">=</span>l, astar<span class="op">=</span>aₚ, lstar<span class="op">=</span>lₚ, spaces<span class="op">=</span>(Vd, V0, U), J<span class="op">=</span>J, ∇J<span class="op">=</span>∇J,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>               ρ<span class="op">=</span>ρ, α_0<span class="op">=</span>α_0, α_min<span class="op">=</span>α_min, σ<span class="op">=</span>σ, K_max<span class="op">=</span>K_max, tol<span class="op">=</span>tol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  1.426310 seconds (68 allocations: 751.332 MiB, 2.37% gc time)
+  1.261784 seconds (68 allocations: 751.332 MiB, 1.29% gc time)
+Initial cost J(y, u) = 0.04888874797773267
+========================================
+Iteration Step k = 1
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04888874797773267
+ J(y, u) = 0.0486387662181185
+========================================
+Iteration Step k = 2
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0486387662181185
+ J(y, u) = 0.0483900663251951
+========================================
+Iteration Step k = 3
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0483900663251951
+ J(y, u) = 0.04814264172516181
+========================================
+Iteration Step k = 4
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04814264172516181
+ J(y, u) = 0.047896485877925686
+========================================
+Iteration Step k = 5
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.047896485877925686
+ J(y, u) = 0.047651592276918106
+========================================
+Iteration Step k = 6
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.047651592276918106
+ J(y, u) = 0.04740795444895988
+========================================
+Iteration Step k = 7
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04740795444895988
+ J(y, u) = 0.04716556595405774
+========================================
+Iteration Step k = 8
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04716556595405774
+ J(y, u) = 0.046924420385242395
+========================================
+Iteration Step k = 9
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.046924420385242395
+ J(y, u) = 0.04668451136841171
+========================================
+Iteration Step k = 10
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04668451136841171
+ J(y, u) = 0.046445832562135816
+========================================
+Iteration Step k = 11
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.046445832562135816
+ J(y, u) = 0.046208377657522504
+========================================
+Iteration Step k = 12
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.046208377657522504
+ J(y, u) = 0.04597214037802652
+========================================
+Iteration Step k = 13
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04597214037802652
+ J(y, u) = 0.0457371144792842
+========================================
+Iteration Step k = 14
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0457371144792842
+ J(y, u) = 0.04550329374897409
+========================================
+Iteration Step k = 15
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04550329374897409
+ J(y, u) = 0.045270672006607
+========================================
+Iteration Step k = 16
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.045270672006607
+ J(y, u) = 0.04503924310341339
+========================================
+Iteration Step k = 17
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04503924310341339
+ J(y, u) = 0.044809000922142773
+========================================
+Iteration Step k = 18
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.044809000922142773
+ J(y, u) = 0.04457993937692153
+========================================
+Iteration Step k = 19
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04457993937692153
+ J(y, u) = 0.044352052413081294
+========================================
+Iteration Step k = 20
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.044352052413081294
+ J(y, u) = 0.04412533400701183
+========================================
+Iteration Step k = 21
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04412533400701183
+ J(y, u) = 0.04389977816598703
+========================================
+Iteration Step k = 22
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04389977816598703
+ J(y, u) = 0.04367537892801536
+========================================
+Iteration Step k = 23
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04367537892801536
+ J(y, u) = 0.043452130361685506
+========================================
+Iteration Step k = 24
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.043452130361685506
+ J(y, u) = 0.04323002656599271
+========================================
+Iteration Step k = 25
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04323002656599271
+ J(y, u) = 0.04300906167020715
+========================================
+Iteration Step k = 26
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04300906167020715
+ J(y, u) = 0.04278922983369818
+========================================
+Iteration Step k = 27
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04278922983369818
+ J(y, u) = 0.04257052524579236
+========================================
+Iteration Step k = 28
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04257052524579236
+ J(y, u) = 0.04235294212560951
+========================================
+Iteration Step k = 29
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04235294212560951
+ J(y, u) = 0.04213647472192439
+========================================
+Iteration Step k = 30
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04213647472192439
+ J(y, u) = 0.04192111731299462
+========================================
+Iteration Step k = 31
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04192111731299462
+ J(y, u) = 0.04170686420643091
+========================================
+Iteration Step k = 32
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04170686420643091
+ J(y, u) = 0.04149370973903294
+========================================
+Iteration Step k = 33
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04149370973903294
+ J(y, u) = 0.041281648276639354
+========================================
+Iteration Step k = 34
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.041281648276639354
+ J(y, u) = 0.04107067421399025
+========================================
+Iteration Step k = 35
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04107067421399025
+ J(y, u) = 0.04086078197456422
+========================================
+Iteration Step k = 36
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04086078197456422
+ J(y, u) = 0.040651966010442055
+========================================
+Iteration Step k = 37
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.040651966010442055
+ J(y, u) = 0.040444220802151536
+========================================
+Iteration Step k = 38
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.040444220802151536
+ J(y, u) = 0.04023754085853366
+========================================
+Iteration Step k = 39
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.04023754085853366
+ J(y, u) = 0.040031920716586636
+========================================
+Iteration Step k = 40
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.040031920716586636
+ J(y, u) = 0.03982735494131889
+========================================
+Iteration Step k = 41
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03982735494131889
+ J(y, u) = 0.03962383812562239
+========================================
+Iteration Step k = 42
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03962383812562239
+ J(y, u) = 0.03942136489010625
+========================================
+Iteration Step k = 43
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03942136489010625
+ J(y, u) = 0.03921992988297535
+========================================
+Iteration Step k = 44
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03921992988297535
+ J(y, u) = 0.03901952777987937
+========================================
+Iteration Step k = 45
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03901952777987937
+ J(y, u) = 0.03882015328377218
+========================================
+Iteration Step k = 46
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03882015328377218
+ J(y, u) = 0.03862180112476916
+========================================
+Iteration Step k = 47
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03862180112476916
+ J(y, u) = 0.038424466060015
+========================================
+Iteration Step k = 48
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.038424466060015
+ J(y, u) = 0.03822814287354443
+========================================
+Iteration Step k = 49
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03822814287354443
+ J(y, u) = 0.03803282637613041
+========================================
+Iteration Step k = 50
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03803282637613041
+ J(y, u) = 0.0378385114051705
+========================================
+Iteration Step k = 51
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0378385114051705
+ J(y, u) = 0.037645192824531576
+========================================
+Iteration Step k = 52
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.037645192824531576
+ J(y, u) = 0.03745286552442281
+========================================
+Iteration Step k = 53
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03745286552442281
+ J(y, u) = 0.037261524421253696
+========================================
+Iteration Step k = 54
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.037261524421253696
+ J(y, u) = 0.03707116445750897
+========================================
+Iteration Step k = 55
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03707116445750897
+ J(y, u) = 0.036881780601606164
+========================================
+Iteration Step k = 56
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.036881780601606164
+ J(y, u) = 0.03669336784776909
+========================================
+Iteration Step k = 57
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03669336784776909
+ J(y, u) = 0.03650592121588946
+========================================
+Iteration Step k = 58
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03650592121588946
+ J(y, u) = 0.03631943575140748
+========================================
+Iteration Step k = 59
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03631943575140748
+ J(y, u) = 0.036133906525155086
+========================================
+Iteration Step k = 60
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.036133906525155086
+ J(y, u) = 0.03594932863326147</code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
