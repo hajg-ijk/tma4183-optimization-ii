@@ -2,5 +2,5 @@
 *.png
 *.css
 *.woff
-OptimalControlProblems/PoissonOCPPart-II_files/.DS_Store
-.DS_Store
+*.DS_Store
+*.vtu
