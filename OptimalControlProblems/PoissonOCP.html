@@ -179,7 +179,8 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <section id="problem-1" class="level2">
 <h2 class="anchored" data-anchor-id="problem-1">Problem 1</h2>
 <p>Let <span class="math inline">\(\mathcal{U}_{ad} = \mathcal{U}\)</span> and solve the resulting <em>unconstrained</em> OCP numerically by implementing a descent methods using * steepest descent as descent direction * backtracking Armijo line-search to select the step length</p>
-<p>Choose <span class="math display">\[
+<p>Choose</p>
+<p><span class="math display">\[
   \rho = \dfrac{1}{2},
   \quad
   \alpha_0 = 1.0,
@@ -190,7 +191,7 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
   \quad
   N_{\max} = 500  
 \]</span></p>
-<p>We present a detailed step-by-step walk-through of the s. Afterwards, we will wrap up everything and encapsulated our code into a nice and neat solver function.</p>
+<p>To solve this problem, you are asked to complete the following 5 Steps.</p>
 </section>
 <section id="step-1" class="level2">
 <h2 class="anchored" data-anchor-id="step-1">Step 1</h2>
@@ -214,7 +215,7 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <p>Before we start implementing, let’s have a look at the following pseudocode taking from <a href="https://link.springer.com/book/10.1007/978-3-030-77226-0">ManzoniQuarteroniSalsa2021, Algorithm 6.2</a></p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="PoissonOCP_files/figure-html/568aa216-1-SteepestDescentPseudoCode.png" class="img-fluid figure-img"></p>
+<p><img src="PoissonOCP_files/figure-html/94363b28-1-SteepestDescentPseudoCode.png" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">SteepestDescentPseudoCode.png</figcaption><p></p>
 </figure>
 </div>
@@ -226,62 +227,64 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 </section>
 <section id="step-3-review-of-how-to-solve-pdes-problems-in-gridap" class="level2">
 <h2 class="anchored" data-anchor-id="step-3-review-of-how-to-solve-pdes-problems-in-gridap">Step 3 Review of how to solve PDEs problems in Gridap</h2>
-<p>As a little refresher, we now implement the state problem for an initial random control <span class="math inline">\(u\)</span>. At the same time, we will see how to make the state/co-state</p>
-<div class="cell" data-execution_count="1">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap.Algebra</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>domain <span class="op">=</span> (<span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>partition <span class="op">=</span> (<span class="fl">600</span>, <span class="fl">600</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> <span class="fu">CartesianDiscreteModel</span>(domain, partition) <span class="op">|&gt;</span> simplexify</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(model, <span class="st">"mesh_nx</span><span class="sc">$</span>(partition[<span class="fl">1</span>])<span class="st">_ny</span><span class="sc">$</span>(partition[<span class="fl">2</span>])<span class="st">"</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>β <span class="op">=</span> <span class="fl">1</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> <span class="fl">0</span></span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">yΩ</span>(x) <span class="op">=</span> <span class="fl">10</span><span class="op">*</span>x[<span class="fl">1</span>]<span class="fu">*</span>(<span class="fl">1</span><span class="op">-</span>x[<span class="fl">1</span>])<span class="op">*</span>x[<span class="fl">2</span>]<span class="fu">*</span>(<span class="fl">1</span><span class="op">-</span>x[<span class="fl">2</span>]) <span class="co"># Target function</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">yd</span>(x) <span class="op">=</span> <span class="fl">0</span>  <span class="co"># Dirichlet condition</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co">## Define function spaces </span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="fl">1</span></span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>reffe <span class="op">=</span> <span class="fu">ReferenceFE</span>(lagrangian, <span class="dt">Float64</span>, order)</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Test and trial spaces for the state problem</span></span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>V0 <span class="op">=</span> <span class="fu">TestFESpace</span>(model, reffe, conformity<span class="op">=:</span>H1, dirichlet_tags<span class="op">=</span><span class="st">"boundary"</span>)</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>Vd <span class="op">=</span> <span class="fu">TrialFESpace</span>(V0, yd)</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Function space for the control</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>U <span class="op">=</span> <span class="fu">FESpace</span>(model, reffe, conformity<span class="op">=:</span>H1)</span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up measures</span></span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>degree <span class="op">=</span> <span class="fl">2</span><span class="op">*</span>order</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>Ω <span class="op">=</span> <span class="fu">Triangulation</span>(model)</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>dΩ <span class="op">=</span> <span class="fu">Measure</span>(Ω, degree)</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for state problem</span></span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="fu">a</span>(y,<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">∫</span>(<span class="fu">∇</span>(y)<span class="fu">⋅∇</span>(<span class="cn">φ</span>))<span class="op">*</span>dΩ</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for state problem</span></span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># As the control u will change throughout the numerical computation</span></span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="co"># make l dependent on u as well.</span></span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Later we use lambda function to make a concrete l in each step, e.g.</span></span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="co"># l_u = φ -&gt; l(φ, u)</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="fu">l</span>(<span class="cn">φ</span>, u) <span class="op">=</span> <span class="fu">∫</span>((f<span class="op">+</span>β<span class="op">*</span>u)<span class="op">*</span><span class="cn">φ</span>)<span class="op">*</span>dΩ</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a random u</span></span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="fu">l_u</span>(<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">l</span>(<span class="cn">φ</span>, u)</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineFEOperator</span>(a, l_u, Vd, V0)</span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Alternative: use lambda/anonymuous function to define l_u</span></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="co"># op = AffineFEOperator(a, φ -&gt; l(φ, u), Vd, V0)</span></span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>y  <span class="op">=</span> <span class="fu">solve</span>(op)</span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(Ω, <span class="st">"results"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>[ Info: Precompiling Gridap [56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e]</code></pre>
+<p>As a little refresher, we now implement the state problem for an initial random control <span class="math inline">\(u\)</span>. At the same time, we will see how to we can incorporate dependency of the state/co-state depending on respectively <span class="math inline">\(u\)</span> and <span class="math inline">\(y\)</span> using Julia’s lambda functions. But first, we need to activate the correct Julia project.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="bu">Pkg</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">activate</span>(<span class="st">"../"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">status</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="1">
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Gridap.Algebra</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>domain <span class="op">=</span> (<span class="fl">0</span>,<span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>partition <span class="op">=</span> (<span class="fl">50</span>, <span class="fl">50</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> <span class="fu">CartesianDiscreteModel</span>(domain, partition) <span class="op">|&gt;</span> simplexify</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(model, <span class="st">"mesh_nx</span><span class="sc">$</span>(partition[<span class="fl">1</span>])<span class="st">_ny</span><span class="sc">$</span>(partition[<span class="fl">2</span>])<span class="st">"</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>β <span class="op">=</span> <span class="fl">1</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> <span class="fl">0</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">yΩ</span>(x) <span class="op">=</span> <span class="fl">10</span><span class="op">*</span>x[<span class="fl">1</span>]<span class="fu">*</span>(<span class="fl">1</span><span class="op">-</span>x[<span class="fl">1</span>])<span class="op">*</span>x[<span class="fl">2</span>]<span class="fu">*</span>(<span class="fl">1</span><span class="op">-</span>x[<span class="fl">2</span>]) <span class="co"># Target function</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">yd</span>(x) <span class="op">=</span> <span class="fl">0</span>  <span class="co"># Dirichlet condition</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co">## Define function spaces </span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>order <span class="op">=</span> <span class="fl">1</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>reffe <span class="op">=</span> <span class="fu">ReferenceFE</span>(lagrangian, <span class="dt">Float64</span>, order)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Test and trial spaces for the state problem</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>V0 <span class="op">=</span> <span class="fu">TestFESpace</span>(model, reffe, conformity<span class="op">=:</span>H1, dirichlet_tags<span class="op">=</span><span class="st">"boundary"</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>Vd <span class="op">=</span> <span class="fu">TrialFESpace</span>(V0, yd)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Function space for the control</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>U <span class="op">=</span> <span class="fu">FESpace</span>(model, reffe, conformity<span class="op">=:</span>H1)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up measures</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>degree <span class="op">=</span> <span class="fl">2</span><span class="op">*</span>order</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>Ω <span class="op">=</span> <span class="fu">Triangulation</span>(model)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>dΩ <span class="op">=</span> <span class="fu">Measure</span>(Ω, degree)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for state problem</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="fu">a</span>(y,<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">∫</span>(<span class="fu">∇</span>(y)<span class="fu">⋅∇</span>(<span class="cn">φ</span>))<span class="op">*</span>dΩ</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Define lhs for state problem</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># As the control u will change throughout the numerical computation</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co"># make l dependent on u as well.</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Later we use lambda function to make a concrete l in each step, e.g.</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># l_u = φ -&gt; l(φ, u)</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="fu">l</span>(<span class="cn">φ</span>, u) <span class="op">=</span> <span class="fu">∫</span>((f<span class="op">+</span>β<span class="op">*</span>u)<span class="op">*</span><span class="cn">φ</span>)<span class="op">*</span>dΩ</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a random u</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="fu">l_u</span>(<span class="cn">φ</span>) <span class="op">=</span> <span class="fu">l</span>(<span class="cn">φ</span>, u)</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>op <span class="op">=</span> <span class="fu">AffineFEOperator</span>(a, l_u, Vd, V0)</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Alternative: use lambda/anonymuous function to define l_u</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co"># op = AffineFEOperator(a, φ -&gt; l(φ, u), Vd, V0)</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>y  <span class="op">=</span> <span class="fu">solve</span>(op)</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(Ω, <span class="st">"results"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="2">
 <pre><code>(["results.vtu"],)</code></pre>
 </div>
 </div>
@@ -312,7 +315,7 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 </section>
 <section id="solution" class="level4">
 <h4 class="anchored" data-anchor-id="solution">Solution</h4>
-<div class="cell" data-execution_count="2">
+<div class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># We resuse as much as possible from previous code cell.</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate a random u</span></span>
@@ -336,13 +339,13 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="fu">writevtk</span>(Ω, <span class="st">"results"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  1.268092 seconds (68 allocations: 751.332 MiB, 2.17% gc time)</code></pre>
+<pre><code>  1.500276 seconds (68 allocations: 751.332 MiB, 2.00% gc time)</code></pre>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="2">
+<div class="cell-output cell-output-display" data-execution_count="3">
 <pre><code>(["results.vtu"],)</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="3">
+<div class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Second solve</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>u_dof_vals <span class="op">=</span> <span class="fu">rand</span>(<span class="dt">Float64</span>, <span class="fu">num_free_dofs</span>(U))</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>u <span class="op">=</span> <span class="fu">FEFunction</span>(U, u_dof_vals)</span>
@@ -354,14 +357,14 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op, cache, <span class="cn">false</span>)</span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> <span class="fu">FEFunction</span>(V0, y_dof_vals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  0.096653 seconds (65.64 k allocations: 20.397 MiB, 24.49% compilation time)</code></pre>
+<pre><code>  0.120943 seconds (65.64 k allocations: 20.397 MiB, 23.40% compilation time)</code></pre>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="3">
+<div class="cell-output cell-output-display" data-execution_count="4">
 <pre><code>SingleFieldFEFunction():
  num_cells: 720000
  DomainStyle: ReferenceDomain()
  Triangulation: BodyFittedTriangulation()
- Triangulation id: 2045519746158799831</code></pre>
+ Triangulation id: 10902035813114753273</code></pre>
 </div>
 </div>
 </section>
@@ -378,7 +381,7 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">l2</span>(g) <span class="op">=</span> <span class="fu">sum</span>(<span class="fu">∫</span>(g<span class="op">*</span>g)<span class="op">*</span>dΩ)<span class="op">^</span><span class="fl">0.5</span></span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Good to know/mind variable scope: Note that J depends implicitly on γ. If you change γ, so will J!</span></span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>γ <span class="op">=</span> <span class="fl">10</span><span class="op">^-</span><span class="fl">6</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">J</span>(y,u) <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">2</span><span class="fu">*sum</span>(<span class="fu">∫</span>((y<span class="op">-</span>yΩ)<span class="fu">*</span>(y<span class="op">-</span>yΩ))<span class="op">*</span>dΩ) <span class="op">+</span> γ<span class="op">/</span><span class="fl">2</span><span class="fu">*sum</span>(<span class="fu">∫</span>(u<span class="op">*</span>u)<span class="op">*</span>dΩ)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">J</span>(y,u) <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">2</span><span class="fu">*sum</span>(<span class="fu">∫</span>((y<span class="op">-</span>yΩ)<span class="fu">*</span>(y<span class="op">-</span>yΩ))<span class="op">*</span>dΩ) <span class="op">+</span> γ<span class="op">/</span><span class="fl">2</span><span class="fu">*sum</span>(<span class="fu">∫</span>(u<span class="op">*</span>u)<span class="op">*</span>dΩ) <span class="co"># ! the sum is because the ∫ are taken over the triangles!!!</span></span>
 <span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">## Set-up co-state problem</span></span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">pd</span>(x) <span class="op">=</span> <span class="fl">0</span></span>
@@ -403,13 +406,13 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Parameters for the descent methods</span></span>
 <span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>ρ, α_0, α_min, σ, K_max, tol <span class="op">=</span> <span class="fl">1</span><span class="op">/</span><span class="fl">2</span>, <span class="fl">1.0</span>, (<span class="fl">1</span><span class="op">/</span><span class="fl">2</span>)<span class="op">^</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">^-</span><span class="fl">4</span>, <span class="fl">2000</span>, <span class="fl">10</span><span class="op">^-</span><span class="fl">3</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  1.541857 seconds (68 allocations: 751.332 MiB, 0.72% gc time)</code></pre>
+<pre><code>  1.507219 seconds (68 allocations: 751.332 MiB, 2.35% gc time)</code></pre>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="5">
 <pre><code>(0.5, 1.0, 0.03125, 0.0001, 2000, 0.001)</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="9">
+<div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">descent_method</span>(;a, l, astar, lstar, spaces, J, ∇J,</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                         ρ, α_0, α_min, σ, K_max, tol)</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">## Step 1 Initialization </span></span>
@@ -431,7 +434,7 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    lu <span class="op">=</span> <span class="fu">LUSolver</span>()</span>
 <span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> cache <span class="op">=</span> <span class="fu">solve!</span>(y_dof_vals, lu, op)</span>
 <span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># y = FEFunction(V0, y_dof_vals)</span></span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="fu">FEFunction</span>(Vd, y_dof_vals)</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> <span class="fu">FEFunction</span>(V0, y_dof_vals)</span>
 <span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
 <span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assemble lhs/rhs</span></span>
@@ -482,7 +485,7 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>            b <span class="op">=</span> <span class="fu">assemble_vector</span>(<span class="fu">φ-&gt;l</span>(<span class="cn">φ</span>, u), V0)</span>
 <span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a>            op <span class="op">=</span> <span class="fu">AffineOperator</span>(A, b) </span>
 <span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a>            <span class="fu">solve!</span>(y_dof_vals, lu, op, cache, <span class="cn">false</span>)</span>
-<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>            y <span class="op">=</span> <span class="fu">FEFunction</span>(Vd, y_dof_vals)</span>
+<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>            y <span class="op">=</span> <span class="fu">FEFunction</span>(V0, y_dof_vals)</span>
 <span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compare decrease in functional and accept if sufficient</span></span>
 <span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>            cost <span class="op">=</span> <span class="fu">J</span>(y, u)</span>
@@ -513,377 +516,2460 @@ J(y, u) = \dfrac{1}{2} \| y - y_{\Omega}\|_{\Omega}^2 + \dfrac{\gamma}{2} \| u \
 <span id="cb15-101"><a href="#cb15-101" aria-hidden="true" tabindex="-1"></a>    ydiff <span class="op">=</span> y <span class="op">-</span> yΩ</span>
 <span id="cb15-102"><a href="#cb15-102" aria-hidden="true" tabindex="-1"></a>    <span class="fu">writevtk</span>(Ω, <span class="st">"results_final"</span>, cellfields<span class="op">=</span>[<span class="st">"y"</span><span class="op">=&gt;</span> y, <span class="st">"yOmega"</span><span class="op">=&gt;</span>yΩ, <span class="st">"ydiff"</span> <span class="op">=&gt;</span> ydiff, <span class="st">"u"</span> <span class="op">=&gt;</span> u, <span class="st">"p"</span> <span class="op">=&gt;</span> p])</span>
 <span id="cb15-103"><a href="#cb15-103" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="9">
+<div class="cell-output cell-output-display" data-execution_count="6">
 <pre><code>descent_method (generic function with 1 method)</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="10">
+<div class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">descent_method</span>(a<span class="op">=</span>a, l<span class="op">=</span>l, astar<span class="op">=</span>aₚ, lstar<span class="op">=</span>lₚ, spaces<span class="op">=</span>(Vd, V0, U), J<span class="op">=</span>J, ∇J<span class="op">=</span>∇J,</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>               ρ<span class="op">=</span>ρ, α_0<span class="op">=</span>α_0, α_min<span class="op">=</span>α_min, σ<span class="op">=</span>σ, K_max<span class="op">=</span>K_max, tol<span class="op">=</span>tol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  1.426310 seconds (68 allocations: 751.332 MiB, 2.37% gc time)
-  1.261784 seconds (68 allocations: 751.332 MiB, 1.29% gc time)
-Initial cost J(y, u) = 0.04888874797773267
+<pre><code>  1.481366 seconds (68 allocations: 751.332 MiB, 2.28% gc time)
+  1.614130 seconds (70 allocations: 751.332 MiB, 7.84% gc time)
+Initial cost J(y, u) = 0.048899705830677924
 ========================================
 Iteration Step k = 1
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04888874797773267
- J(y, u) = 0.0486387662181185
+ J(y_old, u_old) = 0.048899705830677924
+ J(y, u) = 0.04864966773787684
 ========================================
 Iteration Step k = 2
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.0486387662181185
- J(y, u) = 0.0483900663251951
+ J(y_old, u_old) = 0.04864966773787684
+ J(y, u) = 0.04840091180070306
 ========================================
 Iteration Step k = 3
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.0483900663251951
- J(y, u) = 0.04814264172516181
+ J(y_old, u_old) = 0.04840091180070306
+ J(y, u) = 0.048153431443859133
 ========================================
 Iteration Step k = 4
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04814264172516181
- J(y, u) = 0.047896485877925686
+ J(y_old, u_old) = 0.048153431443859133
+ J(y, u) = 0.047907220125774155
 ========================================
 Iteration Step k = 5
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.047896485877925686
- J(y, u) = 0.047651592276918106
+ J(y_old, u_old) = 0.047907220125774155
+ J(y, u) = 0.047662271338434675
 ========================================
 Iteration Step k = 6
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.047651592276918106
- J(y, u) = 0.04740795444895988
+ J(y_old, u_old) = 0.047662271338434675
+ J(y, u) = 0.04741857860718261
 ========================================
 Iteration Step k = 7
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04740795444895988
- J(y, u) = 0.04716556595405774
+ J(y_old, u_old) = 0.04741857860718261
+ J(y, u) = 0.04717613549057932
 ========================================
 Iteration Step k = 8
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04716556595405774
- J(y, u) = 0.046924420385242395
+ J(y_old, u_old) = 0.04717613549057932
+ J(y, u) = 0.04693493558021587
 ========================================
 Iteration Step k = 9
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.046924420385242395
- J(y, u) = 0.04668451136841171
+ J(y_old, u_old) = 0.04693493558021587
+ J(y, u) = 0.046694972500541464
 ========================================
 Iteration Step k = 10
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04668451136841171
- J(y, u) = 0.046445832562135816
+ J(y_old, u_old) = 0.046694972500541464
+ J(y, u) = 0.04645623990871317
 ========================================
 Iteration Step k = 11
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.046445832562135816
- J(y, u) = 0.046208377657522504
+ J(y_old, u_old) = 0.04645623990871317
+ J(y, u) = 0.046218731494404176
 ========================================
 Iteration Step k = 12
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.046208377657522504
- J(y, u) = 0.04597214037802652
+ J(y_old, u_old) = 0.046218731494404176
+ J(y, u) = 0.04598244097965968
 ========================================
 Iteration Step k = 13
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04597214037802652
- J(y, u) = 0.0457371144792842
+ J(y_old, u_old) = 0.04598244097965968
+ J(y, u) = 0.045747362118708924
 ========================================
 Iteration Step k = 14
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.0457371144792842
- J(y, u) = 0.04550329374897409
+ J(y_old, u_old) = 0.045747362118708924
+ J(y, u) = 0.045513488697825684
 ========================================
 Iteration Step k = 15
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04550329374897409
- J(y, u) = 0.045270672006607
+ J(y_old, u_old) = 0.045513488697825684
+ J(y, u) = 0.0452808145351346
 ========================================
 Iteration Step k = 16
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.045270672006607
- J(y, u) = 0.04503924310341339
+ J(y_old, u_old) = 0.0452808145351346
+ J(y, u) = 0.04504933348047332
 ========================================
 Iteration Step k = 17
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04503924310341339
- J(y, u) = 0.044809000922142773
+ J(y_old, u_old) = 0.04504933348047332
+ J(y, u) = 0.044819039415215894
 ========================================
 Iteration Step k = 18
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.044809000922142773
- J(y, u) = 0.04457993937692153
+ J(y_old, u_old) = 0.044819039415215894
+ J(y, u) = 0.04458992625211682
 ========================================
 Iteration Step k = 19
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04457993937692153
- J(y, u) = 0.044352052413081294
+ J(y_old, u_old) = 0.04458992625211682
+ J(y, u) = 0.044361987935145876
 ========================================
 Iteration Step k = 20
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.044352052413081294
- J(y, u) = 0.04412533400701183
+ J(y_old, u_old) = 0.044361987935145876
+ J(y, u) = 0.044135218439331166
 ========================================
 Iteration Step k = 21
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04412533400701183
- J(y, u) = 0.04389977816598703
+ J(y_old, u_old) = 0.044135218439331166
+ J(y, u) = 0.04390961177059475
 ========================================
 Iteration Step k = 22
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04389977816598703
- J(y, u) = 0.04367537892801536
+ J(y_old, u_old) = 0.04390961177059475
+ J(y, u) = 0.043685161965608614
 ========================================
 Iteration Step k = 23
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04367537892801536
- J(y, u) = 0.043452130361685506
+ J(y_old, u_old) = 0.043685161965608614
+ J(y, u) = 0.04346186309161138
 ========================================
 Iteration Step k = 24
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.043452130361685506
- J(y, u) = 0.04323002656599271
+ J(y_old, u_old) = 0.04346186309161138
+ J(y, u) = 0.043239709246284806
 ========================================
 Iteration Step k = 25
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04323002656599271
- J(y, u) = 0.04300906167020715
+ J(y_old, u_old) = 0.043239709246284806
+ J(y, u) = 0.04301869455756093
 ========================================
 Iteration Step k = 26
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04300906167020715
- J(y, u) = 0.04278922983369818
+ J(y_old, u_old) = 0.04301869455756093
+ J(y, u) = 0.04279881318350323
 ========================================
 Iteration Step k = 27
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04278922983369818
- J(y, u) = 0.04257052524579236
+ J(y_old, u_old) = 0.04279881318350323
+ J(y, u) = 0.04258005931212155
 ========================================
 Iteration Step k = 28
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04257052524579236
- J(y, u) = 0.04235294212560951
+ J(y_old, u_old) = 0.04258005931212155
+ J(y, u) = 0.042362427161239606
 ========================================
 Iteration Step k = 29
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04235294212560951
- J(y, u) = 0.04213647472192439
+ J(y_old, u_old) = 0.042362427161239606
+ J(y, u) = 0.042145910978327226
 ========================================
 Iteration Step k = 30
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04213647472192439
- J(y, u) = 0.04192111731299462
+ J(y_old, u_old) = 0.042145910978327226
+ J(y, u) = 0.04193050504035924
 ========================================
 Iteration Step k = 31
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04192111731299462
- J(y, u) = 0.04170686420643091
+ J(y_old, u_old) = 0.04193050504035924
+ J(y, u) = 0.04171620365366021
 ========================================
 Iteration Step k = 32
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04170686420643091
- J(y, u) = 0.04149370973903294
+ J(y_old, u_old) = 0.04171620365366021
+ J(y, u) = 0.04150300115375399
 ========================================
 Iteration Step k = 33
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04149370973903294
- J(y, u) = 0.041281648276639354
+ J(y_old, u_old) = 0.04150300115375399
+ J(y, u) = 0.04129089190521117
 ========================================
 Iteration Step k = 34
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.041281648276639354
- J(y, u) = 0.04107067421399025
+ J(y_old, u_old) = 0.04129089190521117
+ J(y, u) = 0.04107987030150412
 ========================================
 Iteration Step k = 35
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04107067421399025
- J(y, u) = 0.04086078197456422
+ J(y_old, u_old) = 0.04107987030150412
+ J(y, u) = 0.040869930764858724
 ========================================
 Iteration Step k = 36
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04086078197456422
- J(y, u) = 0.040651966010442055
+ J(y_old, u_old) = 0.040869930764858724
+ J(y, u) = 0.04066106774610088
 ========================================
 Iteration Step k = 37
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.040651966010442055
- J(y, u) = 0.040444220802151536
+ J(y_old, u_old) = 0.04066106774610088
+ J(y, u) = 0.04045327572452144
 ========================================
 Iteration Step k = 38
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.040444220802151536
- J(y, u) = 0.04023754085853366
+ J(y_old, u_old) = 0.04045327572452144
+ J(y, u) = 0.04024654920771833
 ========================================
 Iteration Step k = 39
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.04023754085853366
- J(y, u) = 0.040031920716586636
+ J(y_old, u_old) = 0.04024654920771833
+ J(y, u) = 0.040040882731456034
 ========================================
 Iteration Step k = 40
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.040031920716586636
- J(y, u) = 0.03982735494131889
+ J(y_old, u_old) = 0.040040882731456034
+ J(y, u) = 0.03983627085952376
 ========================================
 Iteration Step k = 41
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03982735494131889
- J(y, u) = 0.03962383812562239
+ J(y_old, u_old) = 0.03983627085952376
+ J(y, u) = 0.0396327081835909
 ========================================
 Iteration Step k = 42
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03962383812562239
- J(y, u) = 0.03942136489010625
+ J(y_old, u_old) = 0.0396327081835909
+ J(y, u) = 0.03943018932305861
 ========================================
 Iteration Step k = 43
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03942136489010625
- J(y, u) = 0.03921992988297535
+ J(y_old, u_old) = 0.03943018932305861
+ J(y, u) = 0.039228708924920086
 ========================================
 Iteration Step k = 44
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03921992988297535
- J(y, u) = 0.03901952777987937
+ J(y_old, u_old) = 0.039228708924920086
+ J(y, u) = 0.0390282616636282
 ========================================
 Iteration Step k = 45
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03901952777987937
- J(y, u) = 0.03882015328377218
+ J(y_old, u_old) = 0.0390282616636282
+ J(y, u) = 0.03882884224094037
 ========================================
 Iteration Step k = 46
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03882015328377218
- J(y, u) = 0.03862180112476916
+ J(y_old, u_old) = 0.03882884224094037
+ J(y, u) = 0.038630445385787075
 ========================================
 Iteration Step k = 47
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03862180112476916
- J(y, u) = 0.038424466060015
+ J(y_old, u_old) = 0.038630445385787075
+ J(y, u) = 0.03843306585412876
 ========================================
 Iteration Step k = 48
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.038424466060015
- J(y, u) = 0.03822814287354443
+ J(y_old, u_old) = 0.03843306585412876
+ J(y, u) = 0.03823669842882589
 ========================================
 Iteration Step k = 49
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03822814287354443
- J(y, u) = 0.03803282637613041
+ J(y_old, u_old) = 0.03823669842882589
+ J(y, u) = 0.03804133791948174
 ========================================
 Iteration Step k = 50
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03803282637613041
- J(y, u) = 0.0378385114051705
+ J(y_old, u_old) = 0.03804133791948174
+ J(y, u) = 0.037846979162331665
 ========================================
 Iteration Step k = 51
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.0378385114051705
- J(y, u) = 0.037645192824531576
+ J(y_old, u_old) = 0.037846979162331665
+ J(y, u) = 0.03765361702008255
 ========================================
 Iteration Step k = 52
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.037645192824531576
- J(y, u) = 0.03745286552442281
+ J(y_old, u_old) = 0.03765361702008255
+ J(y, u) = 0.03746124638179225
 ========================================
 Iteration Step k = 53
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03745286552442281
- J(y, u) = 0.037261524421253696
+ J(y_old, u_old) = 0.03746124638179225
+ J(y, u) = 0.037269862162724744
 ========================================
 Iteration Step k = 54
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.037261524421253696
- J(y, u) = 0.03707116445750897
+ J(y_old, u_old) = 0.037269862162724744
+ J(y, u) = 0.037079459304222004
 ========================================
 Iteration Step k = 55
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03707116445750897
- J(y, u) = 0.036881780601606164
+ J(y_old, u_old) = 0.037079459304222004
+ J(y, u) = 0.03689003277357237
 ========================================
 Iteration Step k = 56
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.036881780601606164
- J(y, u) = 0.03669336784776909
+ J(y_old, u_old) = 0.03689003277357237
+ J(y, u) = 0.03670157756386873
 ========================================
 Iteration Step k = 57
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03669336784776909
- J(y, u) = 0.03650592121588946
+ J(y_old, u_old) = 0.03670157756386873
+ J(y, u) = 0.036514088693883284
 ========================================
 Iteration Step k = 58
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03650592121588946
- J(y, u) = 0.03631943575140748
+ J(y_old, u_old) = 0.036514088693883284
+ J(y, u) = 0.03632756120793096
 ========================================
 Iteration Step k = 59
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.03631943575140748
- J(y, u) = 0.036133906525155086
+ J(y_old, u_old) = 0.03632756120793096
+ J(y, u) = 0.03614199017574393
 ========================================
 Iteration Step k = 60
 ----------------------------------------
 Step length alpha = 1.0
- J(y_old, u_old) = 0.036133906525155086
- J(y, u) = 0.03594932863326147</code></pre>
+ J(y_old, u_old) = 0.03614199017574393
+ J(y, u) = 0.0359573706923409
+========================================
+Iteration Step k = 61
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0359573706923409
+ J(y, u) = 0.0357736978778874
+========================================
+Iteration Step k = 62
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0357736978778874
+ J(y, u) = 0.03559096687758049
+========================================
+Iteration Step k = 63
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03559096687758049
+ J(y, u) = 0.03540917286151035
+========================================
+Iteration Step k = 64
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03540917286151035
+ J(y, u) = 0.035228311024540306
+========================================
+Iteration Step k = 65
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.035228311024540306
+ J(y, u) = 0.03504837658617543
+========================================
+Iteration Step k = 66
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03504837658617543
+ J(y, u) = 0.03486936479043061
+========================================
+Iteration Step k = 67
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03486936479043061
+ J(y, u) = 0.034691270905720814
+========================================
+Iteration Step k = 68
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.034691270905720814
+ J(y, u) = 0.0345140902247187
+========================================
+Iteration Step k = 69
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0345140902247187
+ J(y, u) = 0.034337818064240036
+========================================
+Iteration Step k = 70
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.034337818064240036
+ J(y, u) = 0.03416244976511828
+========================================
+Iteration Step k = 71
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03416244976511828
+ J(y, u) = 0.033987980692081
+========================================
+Iteration Step k = 72
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.033987980692081
+ J(y, u) = 0.033814406233622786
+========================================
+Iteration Step k = 73
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.033814406233622786
+ J(y, u) = 0.033641721801890845
+========================================
+Iteration Step k = 74
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.033641721801890845
+ J(y, u) = 0.03346992283256277
+========================================
+Iteration Step k = 75
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03346992283256277
+ J(y, u) = 0.033299004784720816
+========================================
+Iteration Step k = 76
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.033299004784720816
+ J(y, u) = 0.03312896314073275
+========================================
+Iteration Step k = 77
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03312896314073275
+ J(y, u) = 0.032959793406137104
+========================================
+Iteration Step k = 78
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.032959793406137104
+ J(y, u) = 0.032791491109518775
+========================================
+Iteration Step k = 79
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.032791491109518775
+ J(y, u) = 0.032624051802398794
+========================================
+Iteration Step k = 80
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.032624051802398794
+ J(y, u) = 0.03245747105910494
+========================================
+Iteration Step k = 81
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03245747105910494
+ J(y, u) = 0.03229174447666527
+========================================
+Iteration Step k = 82
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03229174447666527
+ J(y, u) = 0.032126867674683965
+========================================
+Iteration Step k = 83
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.032126867674683965
+ J(y, u) = 0.031962836295236885
+========================================
+Iteration Step k = 84
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.031962836295236885
+ J(y, u) = 0.0317996460027382
+========================================
+Iteration Step k = 85
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0317996460027382
+ J(y, u) = 0.03163729248385144
+========================================
+Iteration Step k = 86
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03163729248385144
+ J(y, u) = 0.03147577144734049
+========================================
+Iteration Step k = 87
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03147577144734049
+ J(y, u) = 0.03131507862399278
+========================================
+Iteration Step k = 88
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03131507862399278
+ J(y, u) = 0.031155209766480813
+========================================
+Iteration Step k = 89
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.031155209766480813
+ J(y, u) = 0.03099616064926418
+========================================
+Iteration Step k = 90
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03099616064926418
+ J(y, u) = 0.030837927068467032
+========================================
+Iteration Step k = 91
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.030837927068467032
+ J(y, u) = 0.030680504841775008
+========================================
+Iteration Step k = 92
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.030680504841775008
+ J(y, u) = 0.030523889808325093
+========================================
+Iteration Step k = 93
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.030523889808325093
+ J(y, u) = 0.030368077828586276
+========================================
+Iteration Step k = 94
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.030368077828586276
+ J(y, u) = 0.03021306478426031
+========================================
+Iteration Step k = 95
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.03021306478426031
+ J(y, u) = 0.030058846578169075
+========================================
+Iteration Step k = 96
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.030058846578169075
+ J(y, u) = 0.029905419134146214
+========================================
+Iteration Step k = 97
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.029905419134146214
+ J(y, u) = 0.02975277839692529
+========================================
+Iteration Step k = 98
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02975277839692529
+ J(y, u) = 0.029600920332043
+========================================
+Iteration Step k = 99
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.029600920332043
+ J(y, u) = 0.029449840925721314
+========================================
+Iteration Step k = 100
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.029449840925721314
+ J(y, u) = 0.029299536184767723
+========================================
+Iteration Step k = 101
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.029299536184767723
+ J(y, u) = 0.029150002136468876
+========================================
+Iteration Step k = 102
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.029150002136468876
+ J(y, u) = 0.02900123482848135
+========================================
+Iteration Step k = 103
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02900123482848135
+ J(y, u) = 0.028853230328737847
+========================================
+Iteration Step k = 104
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.028853230328737847
+ J(y, u) = 0.028705984725325807
+========================================
+Iteration Step k = 105
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.028705984725325807
+ J(y, u) = 0.0285594941264034
+========================================
+Iteration Step k = 106
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0285594941264034
+ J(y, u) = 0.02841375466008402
+========================================
+Iteration Step k = 107
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02841375466008402
+ J(y, u) = 0.028268762474334845
+========================================
+Iteration Step k = 108
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.028268762474334845
+ J(y, u) = 0.0281245137368833
+========================================
+Iteration Step k = 109
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0281245137368833
+ J(y, u) = 0.027981004635103855
+========================================
+Iteration Step k = 110
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.027981004635103855
+ J(y, u) = 0.02783823137592587
+========================================
+Iteration Step k = 111
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02783823137592587
+ J(y, u) = 0.027696190185733098
+========================================
+Iteration Step k = 112
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.027696190185733098
+ J(y, u) = 0.027554877310259036
+========================================
+Iteration Step k = 113
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.027554877310259036
+ J(y, u) = 0.02741428901448815
+========================================
+Iteration Step k = 114
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02741428901448815
+ J(y, u) = 0.027274421582564545
+========================================
+Iteration Step k = 115
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.027274421582564545
+ J(y, u) = 0.027135271317686775
+========================================
+Iteration Step k = 116
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.027135271317686775
+ J(y, u) = 0.026996834542010077
+========================================
+Iteration Step k = 117
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026996834542010077
+ J(y, u) = 0.026859107596548557
+========================================
+Iteration Step k = 118
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026859107596548557
+ J(y, u) = 0.026722086841088257
+========================================
+Iteration Step k = 119
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026722086841088257
+ J(y, u) = 0.026585768654077538
+========================================
+Iteration Step k = 120
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026585768654077538
+ J(y, u) = 0.026450149432537297
+========================================
+Iteration Step k = 121
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026450149432537297
+ J(y, u) = 0.026315225591969277
+========================================
+Iteration Step k = 122
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026315225591969277
+ J(y, u) = 0.02618099356625654
+========================================
+Iteration Step k = 123
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02618099356625654
+ J(y, u) = 0.026047449807565987
+========================================
+Iteration Step k = 124
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.026047449807565987
+ J(y, u) = 0.02591459078626457
+========================================
+Iteration Step k = 125
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02591459078626457
+ J(y, u) = 0.025782412990820524
+========================================
+Iteration Step k = 126
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.025782412990820524
+ J(y, u) = 0.025650912927702385
+========================================
+Iteration Step k = 127
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.025650912927702385
+ J(y, u) = 0.025520087121305247
+========================================
+Iteration Step k = 128
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.025520087121305247
+ J(y, u) = 0.02538993211384099
+========================================
+Iteration Step k = 129
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02538993211384099
+ J(y, u) = 0.025260444465257034
+========================================
+Iteration Step k = 130
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.025260444465257034
+ J(y, u) = 0.0251316207531419
+========================================
+Iteration Step k = 131
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0251316207531419
+ J(y, u) = 0.025003457572636955
+========================================
+Iteration Step k = 132
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.025003457572636955
+ J(y, u) = 0.024875951536341118
+========================================
+Iteration Step k = 133
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.024875951536341118
+ J(y, u) = 0.02474909927422798
+========================================
+Iteration Step k = 134
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02474909927422798
+ J(y, u) = 0.024622897433553483
+========================================
+Iteration Step k = 135
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.024622897433553483
+ J(y, u) = 0.02449734267876737
+========================================
+Iteration Step k = 136
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02449734267876737
+ J(y, u) = 0.02437243169142566
+========================================
+Iteration Step k = 137
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02437243169142566
+ J(y, u) = 0.024248161170097142
+========================================
+Iteration Step k = 138
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.024248161170097142
+ J(y, u) = 0.02412452783028994
+========================================
+Iteration Step k = 139
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02412452783028994
+ J(y, u) = 0.0240015284043514
+========================================
+Iteration Step k = 140
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0240015284043514
+ J(y, u) = 0.02387915964138697
+========================================
+Iteration Step k = 141
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02387915964138697
+ J(y, u) = 0.023757418307172245
+========================================
+Iteration Step k = 142
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.023757418307172245
+ J(y, u) = 0.0236363011840723
+========================================
+Iteration Step k = 143
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0236363011840723
+ J(y, u) = 0.02351580507095249
+========================================
+Iteration Step k = 144
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02351580507095249
+ J(y, u) = 0.023395926783091124
+========================================
+Iteration Step k = 145
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.023395926783091124
+ J(y, u) = 0.023276663152103888
+========================================
+Iteration Step k = 146
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.023276663152103888
+ J(y, u) = 0.023158011025850977
+========================================
+Iteration Step k = 147
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.023158011025850977
+ J(y, u) = 0.023039967268360665
+========================================
+Iteration Step k = 148
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.023039967268360665
+ J(y, u) = 0.022922528759741215
+========================================
+Iteration Step k = 149
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022922528759741215
+ J(y, u) = 0.022805692396102854
+========================================
+Iteration Step k = 150
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022805692396102854
+ J(y, u) = 0.022689455089471653
+========================================
+Iteration Step k = 151
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022689455089471653
+ J(y, u) = 0.022573813767709755
+========================================
+Iteration Step k = 152
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022573813767709755
+ J(y, u) = 0.022458765374437098
+========================================
+Iteration Step k = 153
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022458765374437098
+ J(y, u) = 0.022344306868943894
+========================================
+Iteration Step k = 154
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022344306868943894
+ J(y, u) = 0.02223043522611507
+========================================
+Iteration Step k = 155
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02223043522611507
+ J(y, u) = 0.0221171474363537
+========================================
+Iteration Step k = 156
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0221171474363537
+ J(y, u) = 0.022004440505491572
+========================================
+Iteration Step k = 157
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.022004440505491572
+ J(y, u) = 0.021892311454717265
+========================================
+Iteration Step k = 158
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021892311454717265
+ J(y, u) = 0.021780757320496565
+========================================
+Iteration Step k = 159
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021780757320496565
+ J(y, u) = 0.021669775154492445
+========================================
+Iteration Step k = 160
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021669775154492445
+ J(y, u) = 0.021559362023485976
+========================================
+Iteration Step k = 161
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021559362023485976
+ J(y, u) = 0.021449515009307283
+========================================
+Iteration Step k = 162
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021449515009307283
+ J(y, u) = 0.021340231208744617
+========================================
+Iteration Step k = 163
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021340231208744617
+ J(y, u) = 0.021231507733477453
+========================================
+Iteration Step k = 164
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021231507733477453
+ J(y, u) = 0.021123341709998175
+========================================
+Iteration Step k = 165
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021123341709998175
+ J(y, u) = 0.021015730279534756
+========================================
+Iteration Step k = 166
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.021015730279534756
+ J(y, u) = 0.020908670597978525
+========================================
+Iteration Step k = 167
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.020908670597978525
+ J(y, u) = 0.020802159835797328
+========================================
+Iteration Step k = 168
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.020802159835797328
+ J(y, u) = 0.02069619517798508
+========================================
+Iteration Step k = 169
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02069619517798508
+ J(y, u) = 0.020590773823955744
+========================================
+Iteration Step k = 170
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.020590773823955744
+ J(y, u) = 0.020485892987498762
+========================================
+Iteration Step k = 171
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.020485892987498762
+ J(y, u) = 0.020381549896681304
+========================================
+Iteration Step k = 172
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.020381549896681304
+ J(y, u) = 0.02027774179379674
+========================================
+Iteration Step k = 173
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02027774179379674
+ J(y, u) = 0.020174465935270443
+========================================
+Iteration Step k = 174
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.020174465935270443
+ J(y, u) = 0.02007171959160306
+========================================
+Iteration Step k = 175
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.02007171959160306
+ J(y, u) = 0.019969500047295047
+========================================
+Iteration Step k = 176
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019969500047295047
+ J(y, u) = 0.01986780460076983
+========================================
+Iteration Step k = 177
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01986780460076983
+ J(y, u) = 0.019766630564304458
+========================================
+Iteration Step k = 178
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019766630564304458
+ J(y, u) = 0.019665975263961636
+========================================
+Iteration Step k = 179
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019665975263961636
+ J(y, u) = 0.01956583603951521
+========================================
+Iteration Step k = 180
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01956583603951521
+ J(y, u) = 0.019466210244384947
+========================================
+Iteration Step k = 181
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019466210244384947
+ J(y, u) = 0.019367095245556687
+========================================
+Iteration Step k = 182
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019367095245556687
+ J(y, u) = 0.019268488423526343
+========================================
+Iteration Step k = 183
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019268488423526343
+ J(y, u) = 0.019170387172218972
+========================================
+Iteration Step k = 184
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019170387172218972
+ J(y, u) = 0.019072788898926208
+========================================
+Iteration Step k = 185
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.019072788898926208
+ J(y, u) = 0.018975691024236924
+========================================
+Iteration Step k = 186
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018975691024236924
+ J(y, u) = 0.018879090981964143
+========================================
+Iteration Step k = 187
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018879090981964143
+ J(y, u) = 0.01878298621908514
+========================================
+Iteration Step k = 188
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01878298621908514
+ J(y, u) = 0.018687374195669154
+========================================
+Iteration Step k = 189
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018687374195669154
+ J(y, u) = 0.018592252384809528
+========================================
+Iteration Step k = 190
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018592252384809528
+ J(y, u) = 0.018497618272556922
+========================================
+Iteration Step k = 191
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018497618272556922
+ J(y, u) = 0.018403469357859928
+========================================
+Iteration Step k = 192
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018403469357859928
+ J(y, u) = 0.018309803152489344
+========================================
+Iteration Step k = 193
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018309803152489344
+ J(y, u) = 0.018216617180976936
+========================================
+Iteration Step k = 194
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018216617180976936
+ J(y, u) = 0.01812390898054921
+========================================
+Iteration Step k = 195
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01812390898054921
+ J(y, u) = 0.018031676101062724
+========================================
+Iteration Step k = 196
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.018031676101062724
+ J(y, u) = 0.017939916104941084
+========================================
+Iteration Step k = 197
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.017939916104941084
+ J(y, u) = 0.01784862656710458
+========================================
+Iteration Step k = 198
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01784862656710458
+ J(y, u) = 0.017757805074913594
+========================================
+Iteration Step k = 199
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.017757805074913594
+ J(y, u) = 0.01766744922810221
+========================================
+Iteration Step k = 200
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01766744922810221
+ J(y, u) = 0.017577556638709513
+========================================
+Iteration Step k = 201
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.017577556638709513
+ J(y, u) = 0.01748812493102417
+========================================
+Iteration Step k = 202
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01748812493102417
+ J(y, u) = 0.01739915174151802
+========================================
+Iteration Step k = 203
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01739915174151802
+ J(y, u) = 0.017310634718780714
+========================================
+Iteration Step k = 204
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.017310634718780714
+ J(y, u) = 0.01722257152346549
+========================================
+Iteration Step k = 205
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01722257152346549
+ J(y, u) = 0.017134959828217076
+========================================
+Iteration Step k = 206
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.017134959828217076
+ J(y, u) = 0.01704779731762356
+========================================
+Iteration Step k = 207
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01704779731762356
+ J(y, u) = 0.01696108168813962
+========================================
+Iteration Step k = 208
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01696108168813962
+ J(y, u) = 0.016874810648034606
+========================================
+Iteration Step k = 209
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.016874810648034606
+ J(y, u) = 0.016788981917334442
+========================================
+Iteration Step k = 210
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.016788981917334442
+ J(y, u) = 0.016703593227753746
+========================================
+Iteration Step k = 211
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.016703593227753746
+ J(y, u) = 0.016618642322641982
+========================================
+Iteration Step k = 212
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.016618642322641982
+ J(y, u) = 0.01653412695691887
+========================================
+Iteration Step k = 213
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01653412695691887
+ J(y, u) = 0.01645004489702126
+========================================
+Iteration Step k = 214
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01645004489702126
+ J(y, u) = 0.01636639392083781
+========================================
+Iteration Step k = 215
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01636639392083781
+ J(y, u) = 0.01628317181765259
+========================================
+Iteration Step k = 216
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01628317181765259
+ J(y, u) = 0.01620037638808824
+========================================
+Iteration Step k = 217
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01620037638808824
+ J(y, u) = 0.016118005444046554
+========================================
+Iteration Step k = 218
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.016118005444046554
+ J(y, u) = 0.016036056808648867
+========================================
+Iteration Step k = 219
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.016036056808648867
+ J(y, u) = 0.015954528316185067
+========================================
+Iteration Step k = 220
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015954528316185067
+ J(y, u) = 0.01587341781204356
+========================================
+Iteration Step k = 221
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01587341781204356
+ J(y, u) = 0.015792723152669465
+========================================
+Iteration Step k = 222
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015792723152669465
+ J(y, u) = 0.015712442205497012
+========================================
+Iteration Step k = 223
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015712442205497012
+ J(y, u) = 0.015632572848898234
+========================================
+Iteration Step k = 224
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015632572848898234
+ J(y, u) = 0.015553112972125147
+========================================
+Iteration Step k = 225
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015553112972125147
+ J(y, u) = 0.01547406047525654
+========================================
+Iteration Step k = 226
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01547406047525654
+ J(y, u) = 0.015395413269134663
+========================================
+Iteration Step k = 227
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015395413269134663
+ J(y, u) = 0.015317169275321472
+========================================
+Iteration Step k = 228
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015317169275321472
+ J(y, u) = 0.015239326426035408
+========================================
+Iteration Step k = 229
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015239326426035408
+ J(y, u) = 0.015161882664098852
+========================================
+Iteration Step k = 230
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015161882664098852
+ J(y, u) = 0.015084835942885054
+========================================
+Iteration Step k = 231
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015084835942885054
+ J(y, u) = 0.015008184226263295
+========================================
+Iteration Step k = 232
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.015008184226263295
+ J(y, u) = 0.014931925488541494
+========================================
+Iteration Step k = 233
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014931925488541494
+ J(y, u) = 0.014856057714420775
+========================================
+Iteration Step k = 234
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014856057714420775
+ J(y, u) = 0.01478057889893527
+========================================
+Iteration Step k = 235
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01478057889893527
+ J(y, u) = 0.014705487047399468
+========================================
+Iteration Step k = 236
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014705487047399468
+ J(y, u) = 0.014630780175360538
+========================================
+Iteration Step k = 237
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014630780175360538
+ J(y, u) = 0.014556456308540603
+========================================
+Iteration Step k = 238
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014556456308540603
+ J(y, u) = 0.014482513482786388
+========================================
+Iteration Step k = 239
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014482513482786388
+ J(y, u) = 0.014408949744017664
+========================================
+Iteration Step k = 240
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014408949744017664
+ J(y, u) = 0.014335763148176042
+========================================
+Iteration Step k = 241
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014335763148176042
+ J(y, u) = 0.014262951761172536
+========================================
+Iteration Step k = 242
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014262951761172536
+ J(y, u) = 0.014190513658837021
+========================================
+Iteration Step k = 243
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014190513658837021
+ J(y, u) = 0.014118446926865822
+========================================
+Iteration Step k = 244
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014118446926865822
+ J(y, u) = 0.014046749660774412
+========================================
+Iteration Step k = 245
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.014046749660774412
+ J(y, u) = 0.013975419965843885
+========================================
+Iteration Step k = 246
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013975419965843885
+ J(y, u) = 0.01390445595707286
+========================================
+Iteration Step k = 247
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01390445595707286
+ J(y, u) = 0.01383385575912452
+========================================
+Iteration Step k = 248
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01383385575912452
+ J(y, u) = 0.013763617506283181
+========================================
+Iteration Step k = 249
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013763617506283181
+ J(y, u) = 0.013693739342397142
+========================================
+Iteration Step k = 250
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013693739342397142
+ J(y, u) = 0.013624219420838763
+========================================
+Iteration Step k = 251
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013624219420838763
+ J(y, u) = 0.013555055904444752
+========================================
+Iteration Step k = 252
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013555055904444752
+ J(y, u) = 0.013486246965475965
+========================================
+Iteration Step k = 253
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013486246965475965
+ J(y, u) = 0.013417790785568852
+========================================
+Iteration Step k = 254
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013417790785568852
+ J(y, u) = 0.013349685555681032
+========================================
+Iteration Step k = 255
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013349685555681032
+ J(y, u) = 0.013281929476049899
+========================================
+Iteration Step k = 256
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013281929476049899
+ J(y, u) = 0.013214520756140765
+========================================
+Iteration Step k = 257
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013214520756140765
+ J(y, u) = 0.013147457614603618
+========================================
+Iteration Step k = 258
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013147457614603618
+ J(y, u) = 0.013080738279222364
+========================================
+Iteration Step k = 259
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013080738279222364
+ J(y, u) = 0.013014360986872224
+========================================
+Iteration Step k = 260
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.013014360986872224
+ J(y, u) = 0.012948323983464143
+========================================
+Iteration Step k = 261
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012948323983464143
+ J(y, u) = 0.012882625523909215
+========================================
+Iteration Step k = 262
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012882625523909215
+ J(y, u) = 0.012817263872068009
+========================================
+Iteration Step k = 263
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012817263872068009
+ J(y, u) = 0.012752237300703875
+========================================
+Iteration Step k = 264
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012752237300703875
+ J(y, u) = 0.012687544091435823
+========================================
+Iteration Step k = 265
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012687544091435823
+ J(y, u) = 0.012623182534699295
+========================================
+Iteration Step k = 266
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012623182534699295
+ J(y, u) = 0.012559150929693836
+========================================
+Iteration Step k = 267
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012559150929693836
+ J(y, u) = 0.012495447584342049
+========================================
+Iteration Step k = 268
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012495447584342049
+ J(y, u) = 0.012432070815245336
+========================================
+Iteration Step k = 269
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012432070815245336
+ J(y, u) = 0.012369018947635535
+========================================
+Iteration Step k = 270
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012369018947635535
+ J(y, u) = 0.01230629031533567
+========================================
+Iteration Step k = 271
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01230629031533567
+ J(y, u) = 0.01224388326071164
+========================================
+Iteration Step k = 272
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01224388326071164
+ J(y, u) = 0.01218179613463343
+========================================
+Iteration Step k = 273
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01218179613463343
+ J(y, u) = 0.012120027296422593
+========================================
+Iteration Step k = 274
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012120027296422593
+ J(y, u) = 0.012058575113820202
+========================================
+Iteration Step k = 275
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.012058575113820202
+ J(y, u) = 0.011997437962935788
+========================================
+Iteration Step k = 276
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011997437962935788
+ J(y, u) = 0.011936614228206334
+========================================
+Iteration Step k = 277
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011936614228206334
+ J(y, u) = 0.011876102302355198
+========================================
+Iteration Step k = 278
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011876102302355198
+ J(y, u) = 0.011815900586346304
+========================================
+Iteration Step k = 279
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011815900586346304
+ J(y, u) = 0.011756007489346063
+========================================
+Iteration Step k = 280
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011756007489346063
+ J(y, u) = 0.011696421428678114
+========================================
+Iteration Step k = 281
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011696421428678114
+ J(y, u) = 0.011637140829783786
+========================================
+Iteration Step k = 282
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011637140829783786
+ J(y, u) = 0.011578164126176734
+========================================
+Iteration Step k = 283
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011578164126176734
+ J(y, u) = 0.011519489759407064
+========================================
+Iteration Step k = 284
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011519489759407064
+ J(y, u) = 0.011461116179015646
+========================================
+Iteration Step k = 285
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011461116179015646
+ J(y, u) = 0.011403041842495293
+========================================
+Iteration Step k = 286
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011403041842495293
+ J(y, u) = 0.01134526521524579
+========================================
+Iteration Step k = 287
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01134526521524579
+ J(y, u) = 0.011287784770542156
+========================================
+Iteration Step k = 288
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011287784770542156
+ J(y, u) = 0.01123059898948689
+========================================
+Iteration Step k = 289
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01123059898948689
+ J(y, u) = 0.01117370636097081
+========================================
+Iteration Step k = 290
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01117370636097081
+ J(y, u) = 0.01111710538163538
+========================================
+Iteration Step k = 291
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01111710538163538
+ J(y, u) = 0.011060794555829609
+========================================
+Iteration Step k = 292
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011060794555829609
+ J(y, u) = 0.011004772395576639
+========================================
+Iteration Step k = 293
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.011004772395576639
+ J(y, u) = 0.01094903742052771
+========================================
+Iteration Step k = 294
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01094903742052771
+ J(y, u) = 0.010893588157925703
+========================================
+Iteration Step k = 295
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010893588157925703
+ J(y, u) = 0.010838423142566542
+========================================
+Iteration Step k = 296
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010838423142566542
+ J(y, u) = 0.010783540916761874
+========================================
+Iteration Step k = 297
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010783540916761874
+ J(y, u) = 0.01072894003029588
+========================================
+Iteration Step k = 298
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01072894003029588
+ J(y, u) = 0.01067461904039271
+========================================
+Iteration Step k = 299
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01067461904039271
+ J(y, u) = 0.010620576511675226
+========================================
+Iteration Step k = 300
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010620576511675226
+ J(y, u) = 0.010566811016123225
+========================================
+Iteration Step k = 301
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010566811016123225
+ J(y, u) = 0.010513321133046987
+========================================
+Iteration Step k = 302
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010513321133046987
+ J(y, u) = 0.010460105449035244
+========================================
+Iteration Step k = 303
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010460105449035244
+ J(y, u) = 0.01040716255793137
+========================================
+Iteration Step k = 304
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.01040716255793137
+ J(y, u) = 0.010354491060786368
+========================================
+Iteration Step k = 305
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010354491060786368
+ J(y, u) = 0.010302089565825729
+========================================
+Iteration Step k = 306
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010302089565825729
+ J(y, u) = 0.010249956688412994
+========================================
+Iteration Step k = 307
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010249956688412994
+ J(y, u) = 0.010198091051013988
+========================================
+Iteration Step k = 308
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010198091051013988
+ J(y, u) = 0.010146491283156412
+========================================
+Iteration Step k = 309
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010146491283156412
+ J(y, u) = 0.010095156021397173
+========================================
+Iteration Step k = 310
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010095156021397173
+ J(y, u) = 0.010044083909286907
+========================================
+Iteration Step k = 311
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.010044083909286907
+ J(y, u) = 0.009993273597329865
+========================================
+Iteration Step k = 312
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009993273597329865
+ J(y, u) = 0.00994272374295283
+========================================
+Iteration Step k = 313
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00994272374295283
+ J(y, u) = 0.009892433010466899
+========================================
+Iteration Step k = 314
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009892433010466899
+ J(y, u) = 0.009842400071034877
+========================================
+Iteration Step k = 315
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009842400071034877
+ J(y, u) = 0.009792623602630867
+========================================
+Iteration Step k = 316
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009792623602630867
+ J(y, u) = 0.009743102290011275
+========================================
+Iteration Step k = 317
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009743102290011275
+ J(y, u) = 0.009693834824677653
+========================================
+Iteration Step k = 318
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009693834824677653
+ J(y, u) = 0.009644819904839433
+========================================
+Iteration Step k = 319
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009644819904839433
+ J(y, u) = 0.009596056235385751
+========================================
+Iteration Step k = 320
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009596056235385751
+ J(y, u) = 0.009547542527843542
+========================================
+Iteration Step k = 321
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009547542527843542
+ J(y, u) = 0.009499277500351472
+========================================
+Iteration Step k = 322
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009499277500351472
+ J(y, u) = 0.009451259877618412
+========================================
+Iteration Step k = 323
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009451259877618412
+ J(y, u) = 0.00940348839089569
+========================================
+Iteration Step k = 324
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00940348839089569
+ J(y, u) = 0.009355961777940914
+========================================
+Iteration Step k = 325
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009355961777940914
+ J(y, u) = 0.009308678782982254
+========================================
+Iteration Step k = 326
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009308678782982254
+ J(y, u) = 0.009261638156692413
+========================================
+Iteration Step k = 327
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009261638156692413
+ J(y, u) = 0.009214838656146876
+========================================
+Iteration Step k = 328
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009214838656146876
+ J(y, u) = 0.009168279044798415
+========================================
+Iteration Step k = 329
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009168279044798415
+ J(y, u) = 0.009121958092438428
+========================================
+Iteration Step k = 330
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009121958092438428
+ J(y, u) = 0.009075874575169344
+========================================
+Iteration Step k = 331
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.009075874575169344
+ J(y, u) = 0.00903002727537017
+========================================
+Iteration Step k = 332
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00903002727537017
+ J(y, u) = 0.008984414981661843
+========================================
+Iteration Step k = 333
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008984414981661843
+ J(y, u) = 0.008939036488880277
+========================================
+Iteration Step k = 334
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008939036488880277
+ J(y, u) = 0.008893890598040985
+========================================
+Iteration Step k = 335
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008893890598040985
+ J(y, u) = 0.008848976116307939
+========================================
+Iteration Step k = 336
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008848976116307939
+ J(y, u) = 0.008804291856962621
+========================================
+Iteration Step k = 337
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008804291856962621
+ J(y, u) = 0.008759836639372241
+========================================
+Iteration Step k = 338
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008759836639372241
+ J(y, u) = 0.008715609288958618
+========================================
+Iteration Step k = 339
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008715609288958618
+ J(y, u) = 0.008671608637167871
+========================================
+Iteration Step k = 340
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008671608637167871
+ J(y, u) = 0.008627833521437684
+========================================
+Iteration Step k = 341
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008627833521437684
+ J(y, u) = 0.008584282785169407
+========================================
+Iteration Step k = 342
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008584282785169407
+ J(y, u) = 0.008540955277693305
+========================================
+Iteration Step k = 343
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008540955277693305
+ J(y, u) = 0.008497849854242697
+========================================
+Iteration Step k = 344
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008497849854242697
+ J(y, u) = 0.008454965375922377
+========================================
+Iteration Step k = 345
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008454965375922377
+ J(y, u) = 0.008412300709675209
+========================================
+Iteration Step k = 346
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008412300709675209
+ J(y, u) = 0.008369854728255436
+========================================
+Iteration Step k = 347
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008369854728255436
+ J(y, u) = 0.008327626310200247
+========================================
+Iteration Step k = 348
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008327626310200247
+ J(y, u) = 0.00828561433979532
+========================================
+Iteration Step k = 349
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00828561433979532
+ J(y, u) = 0.008243817707049567
+========================================
+Iteration Step k = 350
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008243817707049567
+ J(y, u) = 0.008202235307665291
+========================================
+Iteration Step k = 351
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008202235307665291
+ J(y, u) = 0.008160866043004412
+========================================
+Iteration Step k = 352
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008160866043004412
+ J(y, u) = 0.008119708820066974
+========================================
+Iteration Step k = 353
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008119708820066974
+ J(y, u) = 0.008078762551456259
+========================================
+Iteration Step k = 354
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008078762551456259
+ J(y, u) = 0.008038026155352264
+========================================
+Iteration Step k = 355
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.008038026155352264
+ J(y, u) = 0.007997498555484215
+========================================
+Iteration Step k = 356
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007997498555484215
+ J(y, u) = 0.007957178681097634
+========================================
+Iteration Step k = 357
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007957178681097634
+ J(y, u) = 0.007917065466933229
+========================================
+Iteration Step k = 358
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007917065466933229
+ J(y, u) = 0.007877157853191324
+========================================
+Iteration Step k = 359
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007877157853191324
+ J(y, u) = 0.007837454785509663
+========================================
+Iteration Step k = 360
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007837454785509663
+ J(y, u) = 0.00779795521493204
+========================================
+Iteration Step k = 361
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00779795521493204
+ J(y, u) = 0.007758658097880622
+========================================
+Iteration Step k = 362
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007758658097880622
+ J(y, u) = 0.007719562396132447
+========================================
+Iteration Step k = 363
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007719562396132447
+ J(y, u) = 0.007680667076784546
+========================================
+Iteration Step k = 364
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007680667076784546
+ J(y, u) = 0.007641971112235098
+========================================
+Iteration Step k = 365
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007641971112235098
+ J(y, u) = 0.007603473480149366
+========================================
+Iteration Step k = 366
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007603473480149366
+ J(y, u) = 0.007565173163437447
+========================================
+Iteration Step k = 367
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007565173163437447
+ J(y, u) = 0.007527069150224261
+========================================
+Iteration Step k = 368
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007527069150224261
+ J(y, u) = 0.007489160433823397
+========================================
+Iteration Step k = 369
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007489160433823397
+ J(y, u) = 0.007451446012713188
+========================================
+Iteration Step k = 370
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007451446012713188
+ J(y, u) = 0.00741392489050618
+========================================
+Iteration Step k = 371
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00741392489050618
+ J(y, u) = 0.007376596075925181
+========================================
+Iteration Step k = 372
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007376596075925181
+ J(y, u) = 0.007339458582776781
+========================================
+Iteration Step k = 373
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007339458582776781
+ J(y, u) = 0.007302511429924226
+========================================
+Iteration Step k = 374
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007302511429924226
+ J(y, u) = 0.007265753641264848
+========================================
+Iteration Step k = 375
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007265753641264848
+ J(y, u) = 0.007229184245698485
+========================================
+Iteration Step k = 376
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007229184245698485
+ J(y, u) = 0.00719280227710753
+========================================
+Iteration Step k = 377
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.00719280227710753
+ J(y, u) = 0.007156606774328342
+========================================
+Iteration Step k = 378
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007156606774328342
+ J(y, u) = 0.007120596781124558
+========================================
+Iteration Step k = 379
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007120596781124558
+ J(y, u) = 0.0070847713461673605
+========================================
+Iteration Step k = 380
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0070847713461673605
+ J(y, u) = 0.0070491295230027205
+========================================
+Iteration Step k = 381
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0070491295230027205
+ J(y, u) = 0.007013670370033482
+========================================
+Iteration Step k = 382
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.007013670370033482
+ J(y, u) = 0.006978392950490645
+========================================
+Iteration Step k = 383
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006978392950490645
+ J(y, u) = 0.006943296332406065
+========================================
+Iteration Step k = 384
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006943296332406065
+ J(y, u) = 0.006908379588595585
+========================================
+Iteration Step k = 385
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006908379588595585
+ J(y, u) = 0.006873641796627882
+========================================
+Iteration Step k = 386
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006873641796627882
+ J(y, u) = 0.006839082038801679
+========================================
+Iteration Step k = 387
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006839082038801679
+ J(y, u) = 0.006804699402122943
+========================================
+Iteration Step k = 388
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006804699402122943
+ J(y, u) = 0.006770492978279767
+========================================
+Iteration Step k = 389
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006770492978279767
+ J(y, u) = 0.006736461863617249
+========================================
+Iteration Step k = 390
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006736461863617249
+ J(y, u) = 0.006702605159115664
+========================================
+Iteration Step k = 391
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006702605159115664
+ J(y, u) = 0.006668921970365036
+========================================
+Iteration Step k = 392
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006668921970365036
+ J(y, u) = 0.006635411407543635
+========================================
+Iteration Step k = 393
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006635411407543635
+ J(y, u) = 0.006602072585391828
+========================================
+Iteration Step k = 394
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006602072585391828
+ J(y, u) = 0.006568904623190004
+========================================
+Iteration Step k = 395
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006568904623190004
+ J(y, u) = 0.006535906644734776
+========================================
+Iteration Step k = 396
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006535906644734776
+ J(y, u) = 0.006503077778317463
+========================================
+Iteration Step k = 397
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006503077778317463
+ J(y, u) = 0.006470417156698798
+========================================
+Iteration Step k = 398
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006470417156698798
+ J(y, u) = 0.006437923917087682
+========================================
+Iteration Step k = 399
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006437923917087682
+ J(y, u) = 0.006405597201116639
+========================================
+Iteration Step k = 400
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006405597201116639
+ J(y, u) = 0.006373436154820754
+========================================
+Iteration Step k = 401
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006373436154820754
+ J(y, u) = 0.006341439928616005
+========================================
+Iteration Step k = 402
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006341439928616005
+ J(y, u) = 0.0063096076772721455
+========================================
+Iteration Step k = 403
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0063096076772721455
+ J(y, u) = 0.006277938559895389
+========================================
+Iteration Step k = 404
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006277938559895389
+ J(y, u) = 0.006246431739905793
+========================================
+Iteration Step k = 405
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.006246431739905793
+ J(y, u) = 0.0062150863850103655
+========================================
+Iteration Step k = 406
+----------------------------------------
+Step length alpha = 1.0
+ J(y_old, u_old) = 0.0062150863850103655
+ J(y, u) = 0.006183901667186829
+========================================
+Iteration Step k = 407
+----------------------------------------
+Step length alpha = 1.0</code></pre>
+</div>
+<div class="cell-output cell-output-error">
+<pre><code>LoadError: InterruptException:</code></pre>
 </div>
 </div>
 </section>
