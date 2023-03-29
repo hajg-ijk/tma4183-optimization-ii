@@ -46,7 +46,7 @@ u = FEFunction(U, u_dof_vals)
 # op = AffineFEOperator(a, l_u, Vd, V0)
 A = assemble_matrix(a, Vd, V0)
 b = assemble_vector(φ->l(φ, u), V0)
-# op = AffineOperator(A, b) 
+op = AffineOperator(A, b) 
 
 y_dof_vals = fill(0.0, num_free_dofs(V0))
 lu = LUSolver()
@@ -59,7 +59,7 @@ y  = solve(op)
 # Second solve
 u_dof_vals = rand(Float64, num_free_dofs(U))
 u = FEFunction(U, u_dof_vals)
-# l_u(φ) = l(φ, u)
+l_u(φ) = l(φ, u)
 
 b = assemble_vector(φ->l(φ, u), V0)
 op = AffineOperator(A, b) 
